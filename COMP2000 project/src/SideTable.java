@@ -2,6 +2,7 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.util.Arrays;
+import java.util.IntSummaryStatistics;
 
 import java.util.Map;
 import java.util.TreeMap;
@@ -90,7 +91,8 @@ public class SideTable implements SideView {
         }
 
         drawBusiestFooter(g, leftX + 20, rowY + 10, trains);
-        drawStatusBoard(g, leftX + 20, rowY + 30, trains);
+        drawFooterLine(g, leftX + 20, rowY + 30, statusLine(trains));
+        drawFooterLine(g, leftX + 20, rowY + 50, aboardLine(trains));
     }
 
     private void drawRow(Graphics g, int y, Vehicles train, Time time) {
@@ -163,9 +165,17 @@ public class SideTable implements SideView {
                 .collect(Collectors.joining("     "));
     }
 
-    private void drawStatusBoard(Graphics g, int x, int y, Vehicles[] trains) {
+    // One summarizing collector gives the total and the average in one pass.
+    String aboardLine(Vehicles[] trains) {
+        IntSummaryStatistics stats = Arrays.stream(trains)
+                .collect(Collectors.summarizingInt(train -> train.getPassengers().size()));
+        return String.format("Passengers aboard: %d total, %.1f average per train",
+                stats.getSum(), stats.getAverage());
+    }
+
+    private void drawFooterLine(Graphics g, int x, int y, String text) {
         g.setColor(new Color(60, 60, 60));
         g.setFont(new Font("SansSerif", Font.ITALIC, 12));
-        g.drawString(statusLine(trains), x, y + 14);
+        g.drawString(text, x, y + 14);
     }
 }
