@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.imageio.ImageIO;
 
 // Loads background pictures from the asserts folder. A terminal, an IDE run
@@ -26,6 +27,14 @@ public class Assets {
     };
 
     private static final Map<String, Image> cache = new ConcurrentHashMap<>();
+
+    // Counts real disk reads. An AtomicInteger increments safely from any
+    // thread; a plain int++ is read-add-write and can lose updates.
+    private static final AtomicInteger diskReads = new AtomicInteger();
+
+    static int diskReads() {
+        return diskReads.get();
+    }
 
     // computeIfAbsent checks and reads in one atomic step. With a plain
     // "if not in map, read and put" two threads asking for the same file at
@@ -59,6 +68,7 @@ public class Assets {
             return null;
         }
         try {
+            diskReads.incrementAndGet();
             return ImageIO.read(file);
         } catch (IOException ex) {
             System.out.println("Could not read " + file.getPath() + ": " + ex.getMessage());
