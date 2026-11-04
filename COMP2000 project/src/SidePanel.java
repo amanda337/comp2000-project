@@ -57,6 +57,7 @@ public class SidePanel {
 
     public void display(Graphics g, int panelWidth, int panelHeight, Time time, Vehicles[] trains) {
         this.time = time;
+        time.applyEvents(trains); // weather and fire effects on the trains
 
         // Day-night tint over the map. The bars and panels are drawn after
         // it, so only the map and the trains are tinted.
@@ -89,10 +90,18 @@ public class SidePanel {
         g.setFont(new Font("SansSerif", Font.PLAIN, 13));
         g.drawString(time.getDateText(), boxX + 14, boxY + 45);
 
+        // Weather and fire, stacked next to the clock box.
+        int infoX = boxX + boxW + 24;
+        g.setFont(new Font("SansSerif", Font.BOLD, 13));
+        g.setColor(Color.white);
+        g.drawString("Weather: " + time.getWeather().getLabel(), infoX, boxY + 20);
+        g.setColor(new Color(255, 170, 60));
+        g.drawString(time.getFire().getText(), infoX, boxY + 42);
+
         if (!time.isServiceHours()) {
             g.setColor(new Color(255, 120, 120));
             g.setFont(new Font("SansSerif", Font.BOLD, 16));
-            g.drawString("SERVICE ENDED - RESUMES 6:00 AM", boxX + boxW + 24, boxY + 34);
+            g.drawString("SERVICE ENDED - RESUMES 6:00 AM", infoX + 290, boxY + 34);
         }
 
         drawSpeedButtons(g, panelWidth, time.getSpeed().getMultiplier());

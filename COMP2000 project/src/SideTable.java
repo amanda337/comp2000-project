@@ -144,6 +144,9 @@ public class SideTable implements SideView {
     }
 
     private static String status(Vehicles train) {
+        if (train.isStopped()) {
+            return "Stopped";
+        }
         if (train.isDelayed()) {
             return "Delayed";
         }
