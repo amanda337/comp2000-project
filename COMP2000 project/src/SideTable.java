@@ -93,6 +93,7 @@ public class SideTable implements SideView {
         drawBusiestFooter(g, leftX + 20, rowY + 10, trains);
         drawFooterLine(g, leftX + 20, rowY + 30, statusLine(trains));
         drawFooterLine(g, leftX + 20, rowY + 50, aboardLine(trains));
+        drawFooterLine(g, leftX + 20, rowY + 70, "Weather so far: " + time.getWeather().summary());
     }
 
     private void drawRow(Graphics g, int y, Vehicles train, Time time) {
