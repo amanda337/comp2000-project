@@ -125,17 +125,13 @@ fire is at one station and only affects trains at or heading into that station.
    move at all until the fog lifts or the fire is out.
 
 ```mermaid
-graph LR
-    Sunny --> Cloudy
-    Cloudy --> Sunny
-    Sunny --> Rain
-    Cloudy --> Rain
-    Rain --> Sunny
-    Rain --> Cloudy
-    Sunny --> Foggy
-    Cloudy --> Foggy
-    Foggy --> Sunny
-    Foggy --> Cloudy
+flowchart LR
+    sim["simulation time"] --> weather["weather (sunny, cloudy, storm, foggy)"]
+    sim --> fire["fire event (none, small, med, large)"]
+    weather --> effect["train effect calculation (check weather, fire location, delay possible)"]
+    fire --> effect
+    effect --> normal["normal operation"]
+    effect --> delayed["delayed / stop"]
 ```
 
 The arrows show which weather can follow which; there is no arrow between
