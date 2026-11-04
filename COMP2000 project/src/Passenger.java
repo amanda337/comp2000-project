@@ -26,19 +26,9 @@ public class Passenger {
         return totalRoutes;
     }
 
-    public static void spawnPassengers(Time time){
+    public static void spawnPassengers(){
         //Spawns 100 Passangers every 60 tick or 30 in gmae mintues.
-        if(time.ticks % 60 == 0){
-            for(int i =0;i<100;i++){
-                startPoint(allRoutes());
-            }
-        }
-        //To do
-        // Make a function called count passengers which counts total passengers in scene
-        //Name passengers so that it goes Passenger1, Passenger2 ect
-        //Then use an for loop taking the total number of passengers as how many times to run
-        //calls all the move, draw and check function using Passengers[i]
-
+        startPoint(allRoutes());
     }
     // Consumer<Time> spawnPassengers = time ->{
     //     if(time.ticks % 60 == 0){

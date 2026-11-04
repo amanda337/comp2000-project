@@ -93,22 +93,31 @@ public class Panel extends Frame{
                 // reported here rather than stopping anything.
                 try {
                     time.advance();
-                    if (time.isOnSecond() && time.isServiceHours()) {
-                        long step = time.ticks / 5;
-                        Vehicles[] allTrains = {train1, train2, train3, train4};
-                        while (accidents.hasDueEvent(step)) {
-                            accidents.nextEvent().execute(allTrains);
-                        }
 
-                        train1.moveVehicle();
-                        train2.moveVehicle();
-                        train3.moveVehicle();
-                        train4.moveVehicle();
-                        pass1.checkBoarding(train1.getCurStop(), train1.onBoard);
-                        pass1.checkBoarding(train2.getCurStop(), train2.onBoard);
-                        pass1.checkBoarding(train3.getCurStop(), train3.onBoard);
-                        pass1.checkBoarding(train4.getCurStop(), train4.onBoard);
+                    if (time.isServiceHours()) {
+                    Passenger.spawnPassengers();   // once per timer tick (a "frame")
                     }
+
+                    if (time.isOnSecond() && time.isServiceHours()) {
+                    long step = time.ticks / 5;
+                    Vehicles[] allTrains = {train1, train2, train3, train4};
+                    while (accidents.hasDueEvent(step)) {
+                    accidents.nextEvent().execute(allTrains);
+                    }
+
+                    train1.moveVehicle();
+                    train2.moveVehicle();
+                    train3.moveVehicle();
+                    train4.moveVehicle();
+
+    // Every waiting passenger checks every train at its current stop.
+    Train[] trains = {train1, train2, train3, train4};
+    for (Train t : trains) {
+        for (Passenger p : passengers) {
+            p.checkBoarding(t.getCurStop(), t.onBoard);
+        }
+    }
+}
                 } catch (SimulationTimeException ste) {
                     //System.out.println(ste.getMessage());
                 }
@@ -486,9 +495,9 @@ public class Panel extends Frame{
         // map never moves them.
         sidePanel.display(screenGraphics, width, height, time,
                 new Vehicles[]{train1, train2, train3, train4});
-                
-            Passenger.spawnPassengers(time);
-            //Passenger.spawnPassengers.accept(currentTime);
+        
+    
+        
 
 
     }
