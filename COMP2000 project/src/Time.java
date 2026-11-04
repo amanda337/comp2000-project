@@ -41,7 +41,7 @@ public class Time {
     }
 
     // Weather and fire follow the simulated clock, so the 1x/2x/4x speed
-    // changes them too. Weather changes every 3 simulated hours.
+    // changes them too. Each weather spell and fire has its own time limit.
     private final Weather weather = new Weather();
     private final Fire fire = new Fire();
 
@@ -54,8 +54,7 @@ public class Time {
     }
 
     private void updateWeather() {
-        long secondsSinceMidnight = 6 * 3600 + simSeconds; // the clock starts at 6am
-        weather.update(secondsSinceMidnight / Weather.PERIOD_SECONDS);
+        weather.update(simSeconds, simNow().getHour());
     }
 
     // Applies weather and fire to the trains. Called every repaint, but the
@@ -64,8 +63,9 @@ public class Time {
     public void applyEvents(Vehicles[] trains) {
         if (weather.takeChange()) {
             weather.rollDelays(trains);
-            fire.update(weather, trains); // no fire in storm or fog
+            fire.maybeStart(weather, trains, simSeconds); // no fire in rain or fog
         }
+        fire.endIfOver(simSeconds);
         for (Vehicles train : trains) {
             train.setStopped(weather.stopsTrains() || fire.stops(train));
         }
