@@ -29,6 +29,11 @@ public class SidePanel {
     boolean pauseHover = false;
     boolean homeHover = false;
 
+    // Speed buttons (1x 2x 4x) sit left of the home button.
+    int speedButtonWidth = 40;
+    int speedHover = -1;   // index in Speed.OPTIONS under the mouse, or -1
+    Time time;             // remembered from display() so a click can change its speed
+
     Color darkBar = new Color(45, 45, 45);
     Color accentLine = new Color(30, 144, 255);
     Color boxFill = new Color(245, 245, 245);
@@ -51,6 +56,13 @@ public class SidePanel {
     }
 
     public void display(Graphics g, int panelWidth, int panelHeight, Time time, Vehicles[] trains) {
+        this.time = time;
+
+        // Day-night tint over the map. The bars and panels are drawn after
+        // it, so only the map and the trains are tinted.
+        g.setColor(time.dayTint());
+        g.fillRect(0, 0, panelWidth, panelHeight);
+
         drawTopBar(g, panelWidth, time);
         view.draw(g, panelHeight, trains, time);
         drawTabs(g);
@@ -83,8 +95,45 @@ public class SidePanel {
             g.drawString("SERVICE ENDED - RESUMES 6:00 AM", boxX + boxW + 24, boxY + 34);
         }
 
+        drawSpeedButtons(g, panelWidth, time.getSpeed().getMultiplier());
         drawHomeButton(g, panelWidth);
         drawPauseButton(g, panelWidth, time.isRunning());
+    }
+
+    // Speed buttons
+
+    // Left edge of the i-th speed button: they end one gap before the home button.
+    private int speedX(int panelWidth, int i) {
+        int count = Speed.OPTIONS.length;
+        return homeX(panelWidth) - homeGap - (count - i) * speedButtonWidth;
+    }
+
+    // Index of the speed button at (x, y), or -1 if none.
+    private int speedIndexAt(int mouseX, int mouseY, int panelWidth) {
+        for (int i = 0; i < Speed.OPTIONS.length; i++) {
+            if (inRect(mouseX, mouseY, speedX(panelWidth, i), buttonY(), speedButtonWidth, topButtonSize)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    // Three side-by-side boxes; the one matching the current speed is dark.
+    private void drawSpeedButtons(Graphics g, int panelWidth, int current) {
+        g.setFont(new Font("SansSerif", Font.BOLD, 14));
+        for (int i = 0; i < Speed.OPTIONS.length; i++) {
+            int x = speedX(panelWidth, i);
+            int y = buttonY();
+            boolean selected = Speed.OPTIONS[i] == current;
+
+            g.setColor(pick(selected, accentLine, pick(i == speedHover, buttonHoverFill, buttonFill)));
+            g.fillRect(x, y, speedButtonWidth, topButtonSize);
+            g.setColor(Color.black);
+            g.drawRect(x, y, speedButtonWidth, topButtonSize);
+
+            g.setColor(pick(selected, Color.white, Color.black));
+            g.drawString(Speed.label(Speed.OPTIONS[i]), x + 10, y + topButtonSize / 2 + 5);
+        }
     }
 
     // Top-bar pause and home buttons
@@ -113,9 +162,12 @@ public class SidePanel {
     public boolean setButtonHover(int mouseX, int mouseY, int panelWidth) {
         boolean nowPauseHover = isPauseClicked(mouseX, mouseY, panelWidth);
         boolean nowHomeHover = isHomeClicked(mouseX, mouseY, panelWidth);
-        boolean changed = (nowPauseHover != pauseHover) || (nowHomeHover != homeHover);
+        int nowSpeedHover = speedIndexAt(mouseX, mouseY, panelWidth);
+        boolean changed = (nowPauseHover != pauseHover) || (nowHomeHover != homeHover)
+                || (nowSpeedHover != speedHover);
         pauseHover = nowPauseHover;
         homeHover = nowHomeHover;
+        speedHover = nowSpeedHover;
         return changed;
     }
 
@@ -214,8 +266,15 @@ public class SidePanel {
         return inTab(mouseX, mouseY, trainTabY()) || inTab(mouseX, mouseY, tableTabY());
     }
 
-    // Each tab always switches to its own view.
+    // Each tab always switches to its own view. A click on a speed button is
+    // handled here too (Panel already calls this for every click and repaints
+    // when it returns true), so Panel needs no change for the speed buttons.
     public boolean handleTabClick(int mouseX, int mouseY, int panelWidth) {
+        int speedIndex = speedIndexAt(mouseX, mouseY, panelWidth);
+        if (speedIndex >= 0 && time != null) {
+            time.setSpeed(Speed.OPTIONS[speedIndex]);
+            return true;
+        }
         if (inTab(mouseX, mouseY, trainTabY())) {
             view = sideTrain;
             return true;
