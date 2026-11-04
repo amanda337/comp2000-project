@@ -63,9 +63,24 @@ public class Vehicles {
         return delayStepsRemaining > 0;
     }
 
+    // Set by fog or a large fire (see Time.applyEvents): a stopped train does
+    // not move at all and shows a stop sign, unlike a delayed one.
+    boolean stopped = false;
+
+    public void setStopped(boolean stopped){
+        this.stopped = stopped;
+    }
+
+    public boolean isStopped(){
+        return stopped;
+    }
+
     // Steps forward one stop; reverses direction once it reaches the end of the line.
     // Stays put while a delay set by delay(...) is still counting down.
     public void moveVehicle(){
+        if(stopped){
+            return; // not even a delay counts down while completely stopped
+        }
         if(delayStepsRemaining > 0){
             delayStepsRemaining = delayStepsRemaining - 1;
             return;
@@ -108,6 +123,9 @@ public class Vehicles {
         int textY = y + (height + fm.getAscent()) / 2 - 2;
         g.setColor(Color.white);
         g.drawString(name, textX, textY);
+        if(stopped){
+            StopSign.draw(g, x + width / 2, y - 18, 32); // above the train
+        }
         // Passenger indicator: a small dot in the corner when someone is aboard.
         if(onBoard.size() > 0){
             int passengerSize = 6;

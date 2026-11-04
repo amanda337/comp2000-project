@@ -203,7 +203,11 @@ public class SideTrain implements SideView {
         Pair<String, String> upcoming = new Pair<>("Next", SideView.nextStopName(train));
 
         String title = train.getName() + " - " + train.route.name;
-        if (train.isDelayed()) {
+        if (train.isStopped()) {
+            StopSign.draw(g, cardX + cardWidth - 26, cardY + 24, 32); // changes the colour, so first
+            g.setColor(new Color(200, 30, 30));
+            title = title + " (STOPPED)";
+        } else if (train.isDelayed()) {
             g.setColor(new Color(200, 30, 30));
             title = title + " (DELAYED)";
         } else {

@@ -37,6 +37,38 @@ public class Time {
 
     public Time(ActionListener onTick) {
         timer = new Timer(Speed.BASE_DELAY, onTick); // 200ms at 1x, 5 times a second
+        updateWeather();
+    }
+
+    // Weather and fire follow the simulated clock, so the 1x/2x/4x speed
+    // changes them too. Weather changes every 3 simulated hours.
+    private final Weather weather = new Weather();
+    private final Fire fire = new Fire();
+
+    public Weather getWeather() {
+        return weather;
+    }
+
+    public Fire getFire() {
+        return fire;
+    }
+
+    private void updateWeather() {
+        long secondsSinceMidnight = 6 * 3600 + simSeconds; // the clock starts at 6am
+        weather.update(secondsSinceMidnight / Weather.PERIOD_SECONDS);
+    }
+
+    // Applies weather and fire to the trains. Called every repaint, but the
+    // rolls only happen once per weather change. A fog or a large fire near a
+    // train stops it (stop sign); it moves again when that clears.
+    public void applyEvents(Vehicles[] trains) {
+        if (weather.takeChange()) {
+            weather.rollDelays(trains);
+            fire.update(weather, trains); // no fire in storm or fog
+        }
+        for (Vehicles train : trains) {
+            train.setStopped(weather.stopsTrains() || fire.stops(train));
+        }
     }
 
     public Speed getSpeed() {
@@ -97,6 +129,7 @@ public class Time {
             // random wobble so the seconds field looks realistic instead of :00.
             int wobble = random.nextInt(31) - 15; // -15..+15 seconds
             simSeconds = simSeconds + STEP_SECONDS + wobble;
+            updateWeather();
 
             boolean nowServiceHours = isServiceHours();
             if (wasServiceHours && !nowServiceHours) {
