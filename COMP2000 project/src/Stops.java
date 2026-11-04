@@ -7,6 +7,7 @@ public class Stops {
     String name;
     int capacity;
     int totalComuters = 0;
+    boolean onFire = false; // set by Fire; Vehicles draws a flame at a burning stop
 
     public Stops(int x, int y, String name, int capacity) {
         this.x = x;

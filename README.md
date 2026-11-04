@@ -85,7 +85,7 @@ graph TD
 | `EventQueue<T extends SimulationEvent>` | priority queue of due events, wraps `PriorityQueue<T>` |
 | `Pair<T, U>`, `GenericUtil` | small generics: a label/value pair, a bounded `max(T, T)` |
 | `SimulationTimeException` | custom checked exception for the service window |
-| `HazardStripe`, `StopSign`, `Assets` | drawing helpers (delay border, stop sign); background-picture loader |
+| `HazardStripe`, `StopSign`, `Flame`, `Assets` | drawing helpers (delay border, stop sign, flame); background-picture loader |
 | `Speed` | the 1x / 2x / 4x setting; changes the timer delay in `Time` |
 | `Weather`, `Fire` | the weather and fire rules (see below); both owned by `Time` |
 | `DurationLimitException` | custom checked exception: a weather or fire asked to last too long |
@@ -105,20 +105,26 @@ fire is at one station and only affects trains at or heading into that station.
 | Rain | 1 hour | 80% chance of a delay | red/yellow stripe |
 | Foggy | 30 minutes | every train stops until it clears | stop sign |
 
-**Fire** (30% chance of starting each time the weather changes):
+**Fire** (30% chance of starting each time the weather changes, at a random station):
 
-| Fire | Longest | Effect on nearby trains | Look |
-|---|---|---|---|
-| Small | 1 hour | 20% chance of a delay | red/yellow stripe |
-| Medium | 1 hour | 60% chance of a longer delay | red/yellow stripe |
-| Large | 30 minutes | stops until the fire is out | stop sign |
+| Fire | Longest | Spread | Effect on nearby trains | Look |
+|---|---|---|---|---|
+| Small | 1 hour | none, one station | 20% chance to delay one train only | red/yellow stripe |
+| Medium | 1 hour | each neighbouring station has a 25% chance to catch fire, up to 2 more | 60% chance of a longer delay | red/yellow stripe |
+| Large | 30 minutes | keeps spreading until 4 or 5 stations burn | stops until the fire is out | stop sign |
+
+Neighbouring stations are the ones right before and after a station on a line.
+For example, if Central is on fire, a medium fire may spread to Rosebury,
+Jubilee or Sherie Grove. The top bar shows the start and the spread, e.g.
+"Fire: Medium fire at Central +2". Each burning station also shows a small
+flame on the map (`Flame`).
 
 **The rules that tie them together:**
 
 1. A weather never follows itself, so no weather can run past its limit.
 2. Rain and fog never follow each other. After one of them it is sunny or
    cloudy first.
-3. No fire in rain or fog. When either starts, any burning fire is put out.
+3. No fire in rain or fog. When rain or fog starts, any burning fire is put out straight away.
 4. The time of day makes some weather more likely: fog at night, sunny or
    cloudy in the morning, sunny or rain in the afternoon.
 5. A delayed train still moves after its delay ends. A stopped train does not

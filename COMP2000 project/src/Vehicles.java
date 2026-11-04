@@ -126,6 +126,12 @@ public class Vehicles {
         if(stopped){
             StopSign.draw(g, x + width / 2, y - 18, 32); // above the train
         }
+        // A flame over every burning station on this train's line.
+        for(Stops stop : route.stations){
+            if(stop.onFire){
+                Flame.draw(g, stop.x - 24, stop.y - 6, 30);
+            }
+        }
         // Passenger indicator: a small dot in the corner when someone is aboard.
         if(onBoard.size() > 0){
             int passengerSize = 6;
