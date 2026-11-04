@@ -101,8 +101,16 @@ public class Weather {
 
         List<Type> different = choices.stream()
                 .filter(t -> t != type)
+                .filter(t -> !clashes(type, t))
                 .collect(Collectors.toList());
         return different.get(random.nextInt(different.size()));
+    }
+
+    // Rain and fog never follow each other directly. After one of them the
+    // weather must be sunny or cloudy first, in either order.
+    private static boolean clashes(Type from, Type to) {
+        return (from == Type.RAIN && to == Type.FOG)
+                || (from == Type.FOG && to == Type.RAIN);
     }
 
     // True once after each weather change, so the effects are rolled once.
