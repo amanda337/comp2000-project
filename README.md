@@ -142,6 +142,8 @@ The arrows show which weather can follow which; there is no arrow between
 Rain and Foggy. Asking for a spell longer than its limit throws
 `DurationLimitException`.
 
+
+
 ## Project Status
 
 Status: DONE / PARTLY DONE / TODO
@@ -175,8 +177,6 @@ Status: DONE / PARTLY DONE / TODO
 - JUnit tests for `Routes.getNextTowards`, `Vehicles.moveVehicle`, `Time` formatting.
 - More accident causes (breakdown, collision, derailment); different weather in different parts of the map; a replacement bus while a train is delayed.
 - Train images instead of coloured rectangles.
-
-
 
 
 
