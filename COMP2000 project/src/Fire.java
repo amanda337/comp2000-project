@@ -18,6 +18,14 @@ import java.util.stream.Collectors;
 //            up to 2 extra stations
 //   large  - keeps spreading to neighbouring stations until 4 or 5 burn
 // Only trains at or heading into a burning station are affected.
+//
+// When a fire starts:
+//   - a fire is certain once 5 weather changes have passed without one
+//     (and the weather allows it); otherwise each change has a 30% chance
+//   - fires build up: an hour after a small fire started, the next fire is 50%
+//     more likely to be medium; two hours after a medium fire started, it is
+//     50% more likely to be large. After a large fire the build-up starts over.
+//   - rain or fog puts the fire out and also ends the build-up
 public class Fire {
 
     // A small or medium fire delays nearby trains (with delayChance); a large
@@ -43,11 +51,20 @@ public class Fire {
 
     private static final double CHANCE_OF_FIRE = 0.30;   // per weather change, if allowed
     private static final double SPREAD_CHANCE = 0.25;    // medium fire, per neighbouring station
+    private static final int MUST_FIRE_AFTER = 5;        // weather changes without a fire
+    private static final double BUILD_UP = 1.5;          // 50% more likely
+    private static final long ONE_HOUR = 3600;
+    private static final long TWO_HOURS = 7200;
 
     private final Random random = new Random();
     private Size size = Size.NONE;
     private final Set<Stops> burning = new LinkedHashSet<>(); // first one is where it started
     private long endSeconds = 0;
+
+    // The build-up: the size of the last fire and when it started.
+    private Size lastSize = Size.NONE;
+    private long lastStartSeconds = 0;
+    private int changesWithoutFire = 0;
 
     // Near = the train is at a burning station or about to arrive at one.
     private final Predicate<Vehicles> nearFire = train ->
@@ -69,16 +86,21 @@ public class Fire {
     // Called when the weather changes. Rain or fog puts any fire out; otherwise
     // a new fire may start if none is burning.
     public void maybeStart(Weather weather, Vehicles[] trains, long nowSeconds) {
+        changesWithoutFire++;
         if (!weather.allowsFire()) {
             putOut();
+            lastSize = Size.NONE; // rain or fog also ends the build-up
             return;
         }
-        if (size != Size.NONE || random.nextDouble() >= CHANCE_OF_FIRE) {
+        if (size != Size.NONE) {
+            return;
+        }
+        boolean mustHappen = changesWithoutFire >= MUST_FIRE_AFTER;
+        if (!mustHappen && random.nextDouble() >= CHANCE_OF_FIRE) {
             return;
         }
 
-        Size[] sizes = {Size.SMALL, Size.MEDIUM, Size.LARGE};
-        Size newSize = sizes[random.nextInt(sizes.length)];
+        Size newSize = pickSize(nowSeconds);
 
         // Burns at a random station on a random train's line.
         Vehicles anyTrain = trains[random.nextInt(trains.length)];
@@ -89,6 +111,13 @@ public class Fire {
         } catch (DurationLimitException ex) {
             System.out.println(ex.getMessage()); // no fire starts
             return;
+        }
+
+        changesWithoutFire = 0;
+        lastStartSeconds = nowSeconds;
+        lastSize = newSize;
+        if (newSize == Size.LARGE) {
+            lastSize = Size.NONE; // after a large fire the build-up starts over
         }
 
         spread(newSize, where, trains);
@@ -104,6 +133,45 @@ public class Fire {
                 .limit(mostTrains)
                 .filter(train -> random.nextDouble() < size.delayChance)
                 .forEach(train -> train.delay(size.delaySteps));
+    }
+
+    // Small fires are the most common: 50% small, 30% medium, 20% large.
+    // A recent small fire raises the chance of medium by 50% (30% -> 45%), and
+    // a recent medium fire raises the chance of large by 50% (20% -> 30%).
+    private Size pickSize(long nowSeconds) {
+        double[] odds = {0.5, 0.3, 0.2}; // small, medium, large
+
+        long sinceLast = nowSeconds - lastStartSeconds;
+        if (lastSize == Size.SMALL && sinceLast >= ONE_HOUR) {
+            odds = raise(odds, 1);
+        }
+        if (lastSize == Size.MEDIUM && sinceLast >= TWO_HOURS) {
+            odds = raise(odds, 2);
+        }
+
+        double roll = random.nextDouble();
+        if (roll < odds[0]) {
+            return Size.SMALL;
+        }
+        if (roll < odds[0] + odds[1]) {
+            return Size.MEDIUM;
+        }
+        return Size.LARGE;
+    }
+
+    // Makes one chance 50% bigger and shrinks the other two so they still add up to 1.
+    private double[] raise(double[] odds, int which) {
+        double raised = odds[which] * BUILD_UP;
+        double shrink = (1 - raised) / (1 - odds[which]);
+        double[] result = new double[odds.length];
+        for (int i = 0; i < odds.length; i++) {
+            if (i == which) {
+                result[i] = raised;
+            } else {
+                result[i] = odds[i] * shrink;
+            }
+        }
+        return result;
     }
 
     // Spreads the fire from its start to neighbouring stations.
