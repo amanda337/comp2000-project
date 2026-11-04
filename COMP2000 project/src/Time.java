@@ -33,9 +33,56 @@ public class Time {
     private final Random random = new Random();
 
     Timer timer;
+    private final Speed speed = new Speed();
 
     public Time(ActionListener onTick) {
-        timer = new Timer(200, onTick); // fires every 200ms, 5 times a second
+        timer = new Timer(Speed.BASE_DELAY, onTick); // 200ms at 1x, 5 times a second
+    }
+
+    public Speed getSpeed() {
+        return speed;
+    }
+
+    // Changes the speed (1, 2 or 4). Works while running or paused: setDelay
+    // just changes the gap between ticks, so the clock and the trains, which
+    // both move on this timer, speed up together.
+    public void setSpeed(int multiplier) {
+        speed.set(multiplier);
+        timer.setDelay(speed.timerDelay());
+    }
+
+    // Sky tint for the time of day, as {red, green, blue, alpha}. Each row of
+    // TINTS is a key hour; the colour fades smoothly between neighbouring rows.
+    // Alpha 0 is clear daylight, higher alpha is darker night.
+    private static final int[][] TINTS = {
+        {0, 10, 20, 80, 120},   // midnight: deep blue
+        {5, 10, 20, 80, 120},
+        {6, 255, 150, 60, 50},  // dawn: warm orange
+        {8, 255, 220, 150, 0},  // morning: clear
+        {17, 255, 220, 150, 0},
+        {18, 255, 120, 40, 60}, // dusk: orange
+        {20, 30, 30, 100, 100}, // evening: blue
+        {24, 10, 20, 80, 120}   // back to midnight
+    };
+
+    public java.awt.Color dayTint() {
+        LocalTime now = simNow().toLocalTime();
+        double hour = now.getHour() + now.getMinute() / 60.0;
+        for (int i = 1; i < TINTS.length; i++) {
+            if (hour <= TINTS[i][0]) {
+                int[] from = TINTS[i - 1];
+                int[] to = TINTS[i];
+                double t = (hour - from[0]) / (to[0] - from[0]);
+                return new java.awt.Color(
+                        blend(from[1], to[1], t), blend(from[2], to[2], t),
+                        blend(from[3], to[3], t), blend(from[4], to[4], t));
+            }
+        }
+        return new java.awt.Color(0, 0, 0, 0);
+    }
+
+    private static int blend(int a, int b, double t) {
+        return (int) Math.round(a + (b - a) * t);
     }
 
     // Advances the simulated clock by one tick. Throws when the clock crosses
