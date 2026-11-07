@@ -12,15 +12,14 @@ import java.awt.event.WindowEvent;
 import java.util.Arrays;
 import java.util.Set;
 
-// The instructions screen: explains the goal of the simulation and the
-// controls in the panel, with Back (to Home) and Next (into the simulation).
+// help screen with the goal and the controls, BACK and NEXT buttons
 public class Instruction extends Frame {
 
     int width = 1280;
     int height = 720;
 
     int cardTop = 100;
-    int cardBottom = 130; // leaves room for the buttons below the card
+    int cardBottom = 130;  // leaves room for the buttons
 
     int buttonWidth = 160;
     int buttonHeight = 50;
@@ -42,25 +41,28 @@ public class Instruction extends Frame {
         "stop, and get off at their destination. Press space, or the play",
         "button, to watch the network run through its 06:00 AM - midnight",
         "service - it pauses overnight and starts again automatically at 6am.",
+        "Weather and fires can delay or stop trains along the way.",
         "",
         "CONTROLS IN THE SIMULATION",
         "Space, or the play button (top right): start, pause and resume the clock.",
         "House button (top right): return to this app's home screen.",
+        "The 1x, 2x and 4x buttons (next to the house button): change the speed.",
         "Drag anywhere on the map: pan the network. The side panel stays put.",
         "Mouse wheel, or drag its scrollbar, over the left panel: scroll the train list.",
-        "The two tabs on the right of the side panel: switch between the train",
-        "list (\"Train current\") and the timetable (\"Train table\").",
-        "A yellow/red striped border marks a train delayed by an accident.",
+        "The three tabs on the right of the side panel: switch between the train",
+        "list (\"Train current\"), the timetable (\"Train table\") and the statistics.",
+        "A yellow/red striped border marks a delayed train. A stop sign marks a",
+        "stopped train (fog or a large fire). A red ring and flame mark a fire.",
         "",
         "BUTTONS ON THIS SCREEN",
         "BACK returns to the home screen. NEXT starts the simulation."
     };
 
+    // builds the window and handles the button clicks
     public Instruction() {
         setTitle("Transit Sim - Instructions");
         setSize(width, height);
-        // Loaded before the window is shown, so the very first paint already
-        // has the picture ready instead of racing it and drawing blank.
+        // load the picture first so the first paint is not blank
         backgroundImage = Assets.load("ins.png");
         setVisible(true);
 
@@ -89,6 +91,7 @@ public class Instruction extends Frame {
         });
     }
 
+    // both buttons sit at the bottom
     private int buttonY() {
         return height - buttonMargin - buttonHeight;
     }
@@ -101,12 +104,14 @@ public class Instruction extends Frame {
         return width - buttonMargin - buttonWidth;
     }
 
+    // true if the mouse is on the button at this x
     private boolean isOverButton(int mouseX, int mouseY, int buttonX) {
         int y = buttonY();
         return mouseX >= buttonX && mouseX <= buttonX + buttonWidth
                 && mouseY >= y && mouseY <= y + buttonHeight;
     }
 
+    // background, heading, card and the two buttons
     public void paint(Graphics g) {
         if (backgroundImage != null) {
             g.drawImage(backgroundImage, 0, 0, width, height, this);
@@ -126,8 +131,7 @@ public class Instruction extends Frame {
         drawButton(g, nextX(), "NEXT");
     }
 
-    // The card is sized to its widest line of text, then centred on screen,
-    // rather than stretched full width with empty space down one side.
+    // the card is as wide as its longest line and sits in the middle
     private void drawCard(Graphics g) {
         int cardWidth = measureCardWidth(g);
         int cardHeight = height - cardTop - cardBottom;
@@ -149,11 +153,11 @@ public class Instruction extends Frame {
                 g.setColor(Color.black);
             }
             g.drawString(line, textX, y);
-            y = y + 26;
+            y = y + 22;  // line spacing
         }
     }
 
-    // Widest line in its own font (headings are bold), plus side padding.
+    // longest line in its own font, plus padding
     private int measureCardWidth(Graphics g) {
         FontMetrics plainFm = g.getFontMetrics(new Font("SansSerif", Font.PLAIN, 15));
         FontMetrics boldFm = g.getFontMetrics(new Font("SansSerif", Font.BOLD, 18));
@@ -168,10 +172,12 @@ public class Instruction extends Frame {
                 .orElse(0) + 60;
     }
 
+    // heading lines are drawn bold
     private boolean isHeading(String line) {
         return HEADINGS.contains(line);
     }
 
+    // grey box with the label in the middle
     private void drawButton(Graphics g, int x, String label) {
         int y = buttonY();
         g.setColor(buttonFill);
@@ -187,6 +193,7 @@ public class Instruction extends Frame {
         g.drawString(label, textX, textY);
     }
 
+    // the program can start from here
     public static void main(String[] args) {
         new Instruction();
     }

@@ -23,6 +23,8 @@ on a simulated 06:00 AM to midnight day, resuming automatically each morning.
    service resumes automatically at 6am.
 5. The three tabs beside the left panel switch between Train current, Train
    table and Statistics.
+6. To compile, from the `COMP2000 project` folder in PowerShell:
+   `javac -d bin (Get-ChildItem src -Filter *.java).FullName`
 
 ## Folder Structure
 

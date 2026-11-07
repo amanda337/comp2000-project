@@ -7,15 +7,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.imageio.ImageIO;
 
-// Loads background pictures from the asserts folder. A terminal, an IDE run
-// button and a different folder all start with a different working directory,
-// so each likely folder is tried in turn. A missing or unreadable picture just
-// means no background instead of a crash.
-//
-// Pictures are cached, and preload() reads them on a background thread while
-// the Home screen is showing, so Panel finds them ready when it opens. The
-// cache is used by that thread and by the UI thread, so it is a
-// ConcurrentHashMap (see load() for the race this avoids).
+// loads the background pictures, tries each likely folder because the
+// working folder is different when run from a terminal or an IDE.
+// a missing picture gives null (no background) instead of a crash.
+// pictures are cached and read on a background thread while Home shows,
+// so the cache is a ConcurrentHashMap (two threads use it).
 public class Assets {
 
     private static final String[] SEARCH_FOLDERS = {
@@ -28,25 +24,20 @@ public class Assets {
 
     private static final Map<String, Image> cache = new ConcurrentHashMap<>();
 
-    // Counts real disk reads. An AtomicInteger increments safely from any
-    // thread; a plain int++ is read-add-write and can lose updates.
+    // counts real disk reads, AtomicInteger stays correct when two threads add
     private static final AtomicInteger diskReads = new AtomicInteger();
 
+    // how many files were really read from disk
     static int diskReads() {
         return diskReads.get();
     }
 
-    // computeIfAbsent checks and reads in one atomic step. With a plain
-    // "if not in map, read and put" two threads asking for the same file at
-    // once would both read it, and each would end up holding a different copy.
+    // computeIfAbsent checks and reads in one step, so a file is never loaded twice
     public static Image load(String fileName) {
         return cache.computeIfAbsent(fileName, Assets::readFromDisk);
     }
 
-    // Starts one background thread that loads the files in order. The gain is
-    // moving the ~60 ms of decoding off the UI thread, not parallel speed: a
-    // parallel stream over these three small files measured no faster (about
-    // 70 ms against 64 ms). Daemon, so it never keeps the program alive on exit.
+    // loads the files one after another on a background thread so the screen does not wait
     public static void preload(String... fileNames) {
         Thread thread = new Thread(
                 () -> Arrays.stream(fileNames).forEach(Assets::load),
@@ -55,7 +46,7 @@ public class Assets {
         thread.start();
     }
 
-    // Returns null when the file is missing or unreadable (and so is not cached).
+    // null when the file is missing or cannot be read
     private static Image readFromDisk(String fileName) {
         File file = Arrays.stream(SEARCH_FOLDERS)
                 .map(folder -> new File(folder + fileName))

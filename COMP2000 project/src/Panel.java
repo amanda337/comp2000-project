@@ -13,13 +13,13 @@ import java.util.Random;
 
 public class Panel extends Frame{
 
-    int width = 1280; //screen width
-    int height = 720;  //screen height
+    int width = 1280;  // screen width
+    int height = 720;  // screen height
 
-    int majorStation = 40; //Big station 
-    int normalStation= 20;//Normal station
+    int majorStation = 40;  // big station
+    int normalStation= 20;  // normal station
 
-    // Train running the red line, driven by a clock started with space.
+    // the four trains, one on each line
     Train train1 = Train.t1();
     Train train2 = Train.t2();
     Train train3 = Train.t3();
@@ -30,47 +30,42 @@ public class Panel extends Frame{
     Passenger pass1 = Passenger.pass1();
     ArrayList<Passenger> passengers = new ArrayList<>();
 
-    // A handful of random accidents scheduled across the service, so trains
-    // do not all run on a perfectly fixed timetable.
+    // accidents waiting for their step, earliest first
     EventQueue<SimulationEvent> accidents = new EventQueue<>();
 
     Image dbImage;
     Graphics dbGraphics;
 
-    // Sky and tree-line scenery drawn behind the routes. Null (and skipped)
-    // if the files cannot be read, so a missing asset never crashes the map.
+    // background pictures, null if the file is missing
     Image skyImage;
     Image treeImage;
 
     Insets insets = new Insets(0, 0, 0, 0);
 
-    // Dragging the map pans it; the side panels stay fixed on screen.
+    // dragging the map moves it, the side panels stay still
     int panOffsetX = 0;
     int panOffsetY = 0;
     int dragStartX;
     int dragStartY;
     boolean dragging = false;
-    boolean draggingScrollbar = false; // true while the left-bar scrollbar thumb is held
+    boolean draggingScrollbar = false;  // true while the scrollbar is held
 
 
+    // sets up the window, the clock and the mouse and key handling
     public Panel() {
         setTitle("Transit Sim");
         setSize(width, height);
-        // Loaded before the window is shown, so the very first paint already
-        // has the pictures ready instead of racing them and drawing blank.
+        // load the pictures before the window shows so the first paint is not blank
         loadBackgroundImages();
         setVisible(true);
 
-        // Window closing adapter to safely close the application
+        // close the program when the window is closed
         addWindowListener(new WindowAdapter() {
             public void windowClosing(WindowEvent we) {
                 System.exit(0);
             }
 
-            // getInsets() right after setVisible() is unreliable — the native
-            // peer isn't fully realized yet and often reports 0. windowOpened
-            // fires once the window is actually up, so the title bar height
-            // read here is the real one, not a stale/zero guess.
+            // the border size is only right once the window is open
             public void windowOpened(WindowEvent we) {
                 insets = getInsets();
                 setSize(width + insets.left + insets.right, height + insets.top + insets.bottom);
@@ -84,40 +79,38 @@ public class Panel extends Frame{
         passengers.add(pass1);
         scheduleRandomAccidents();
 
-        // Every 5th tick (1 real second) moves the train and checks boarding.
-
+        // every 5th tick (1 real second) the trains move and passengers board
         time = new Time(new ActionListener() {
-            public void actionPerformed(ActionEvent e ) {
-                // The clock keeps running around the clock; SimulationTimeException
-                // only marks the moment service opens or closes, so it is just
-                // reported here rather than stopping anything.
+            public void actionPerformed(ActionEvent e) {
+                // advance() throws when service opens or closes, the tick just carries on
                 try {
                     time.advance();
 
-                    if (time.isServiceHours()) {
-                    Passenger.spawnPassengers();   // once per timer tick (a "frame")
-                    }
+                    // unused: spawnPassengers() does not create anyone yet
+                    // if (time.isServiceHours()) {
+                    //     Passenger.spawnPassengers();
+                    // }
 
                     if (time.isOnSecond() && time.isServiceHours()) {
-                    long step = time.ticks / 5;
-                    Vehicles[] allTrains = {train1, train2, train3, train4};
-                    while (accidents.hasDueEvent(step)) {
-                    accidents.nextEvent().execute(allTrains);
+                        long step = time.ticks / 5;
+                        Vehicles[] allTrains = {train1, train2, train3, train4};
+
+                        // run the accidents that are due
+                        while (accidents.hasDueEvent(step)) {
+                            accidents.nextEvent().execute(allTrains);
+                        }
+
+                        for (Vehicles train : allTrains) {
+                            train.moveVehicle();
+                        }
+
+                        // each passenger gets on or off at the stop the train is at
+                        for (Vehicles train : allTrains) {
+                            for (Passenger p : passengers) {
+                                p.checkBoarding(train.getCurStop(), train.onBoard);
+                            }
+                        }
                     }
-
-                    train1.moveVehicle();
-                    train2.moveVehicle();
-                    train3.moveVehicle();
-                    train4.moveVehicle();
-
-    // Every waiting passenger checks every train at its current stop.
-    Train[] trains = {train1, train2, train3, train4};
-    for (Train t : trains) {
-        for (Passenger p : passengers) {
-            p.checkBoarding(t.getCurStop(), t.onBoard);
-        }
-    }
-}
                 } catch (SimulationTimeException ste) {
                     //System.out.println(ste.getMessage());
                 }
@@ -125,7 +118,7 @@ public class Panel extends Frame{
             }
         });
 
-        // Space toggles the clock: first press starts it, next press pauses, next resumes.
+        // space starts and pauses the clock
         addKeyListener(new KeyAdapter() {
             public void keyPressed(KeyEvent e) {
                 if (e.getKeyCode() == KeyEvent.VK_SPACE) {
@@ -134,14 +127,8 @@ public class Panel extends Frame{
             }
         });
 
-        // One handler for click, drag and wheel: MouseAdapter already covers
-        // MouseListener + MouseMotionListener + MouseWheelListener, so one object is enough.
-        // Clicking the button toggles the clock; dragging the map (not the side panels) pans it;
-        // the wheel and the left-bar scrollbar scroll the train list.
-        //
-        // mx()/my() subtract the window insets: the whole scene is drawn at
-        // (insets.left, insets.top) in update(), but mouse events arrive in
-        // frame coordinates, so without this the hit boxes sit a title-bar
+        // one handler for click, drag and wheel
+        // mx and my take off the window border so clicks line up with the drawing
         // height too high.
         MouseAdapter mouseHandler = new MouseAdapter() {
             private int mx(MouseEvent e) {
@@ -184,7 +171,7 @@ public class Panel extends Frame{
             }
 
             public void mouseMoved(MouseEvent e) {
-                // Light up the scrollbar / buttons when the mouse is near them.
+                // highlight the buttons and scrollbar when the mouse is over them
                 boolean changed = sidePanel.setPointer(mx(e), my(e));
                 changed |= sidePanel.setButtonHover(mx(e), my(e), width);
                 if (changed) {
@@ -212,7 +199,7 @@ public class Panel extends Frame{
             }
 
             public void mouseWheelMoved(MouseWheelEvent e) {
-                // Scroll the train list when the pointer is over the left bar.
+                // the wheel scrolls the train list when the mouse is over the left panel
                 if (mx(e) < sidePanel.getLeftWidth()) {
                     sidePanel.scrollBy(e.getWheelRotation() * 40);
                     repaint();
@@ -224,9 +211,7 @@ public class Panel extends Frame{
         addMouseWheelListener(mouseHandler);
     }
 
-    // Picks 2-3 random accidents across the run: a random train, a random
-    // step to trigger on, and a random number of steps it gets stuck for.
-    // The tick loop executes each one from accidents once its step is due.
+    // 3 to 5 accidents, each with a random train, step and delay length
     private void scheduleRandomAccidents() {
         Random random = new Random();
         Train[] allTrains = {train1, train2, train3, train4};
@@ -234,21 +219,19 @@ public class Panel extends Frame{
 
         for (int i = 0; i < accidentCount; i++) {
             Train chosen = allTrains[random.nextInt(allTrains.length)];
-            long step = 10 + random.nextInt(200); // spread across the 06:00 AM - midnight run
+            long step = 10 + random.nextInt(200);  // spread across the day
             int delaySteps = 3 + random.nextInt(6);
             accidents.add(new AccidentEvent(step, chosen.getName(), delaySteps));
         }
     }
 
-    // Reads the sky and tree scenery once at startup. If either file is
-    // missing or unreadable the map just falls back to a plain background.
+    // the pictures are optional, the map works without them
     private void loadBackgroundImages() {
         skyImage = Assets.load("1.png");
         treeImage = Assets.load("2.png");
     }
 
-    // Redraws the ring of every burning station in red (same 5px stroke as the
-    // black ring). Stops know where they are, so no station positions repeat here.
+    // red ring over each burning station, drawn on top of the black one
     private void drawFireOutlines(Graphics g) {
         Train[] allTrains = {train1, train2, train3, train4};
         java.util.Arrays.stream(allTrains)
@@ -258,14 +241,14 @@ public class Panel extends Frame{
                 .forEach(stop -> {
                     int size = normalStation;
                     if (stop.capacity >= 100) {
-                        size = majorStation; // Central, Town Hall, Troll-upon-Bridge
+                        size = majorStation;  // Central, Town Hall, Troll-upon-Bridge
                     }
                     g.setColor(Color.red);
                     g.drawOval(stop.x - size / 2, stop.y - size / 2, size, size);
                 });
     }
 
-    // Pauses the clock, closes the simulation window and returns to the home screen.
+    // stop the clock, close this window and show the home screen
     private void goHome() {
         if (time.isRunning()) {
             time.toggle();
@@ -274,8 +257,7 @@ public class Panel extends Frame{
         new Home();
     }
 
-    // Draws to an off-screen image first, then blits it in one go, so the
-    // clock/train redraw doesn't flash the whole panel.
+    // draw to an off-screen image first, then copy it over, so it does not flicker
     public void update(Graphics g) {
         if (dbImage == null) {
             dbImage = createImage(width, height);
@@ -284,17 +266,16 @@ public class Panel extends Frame{
         dbGraphics.setColor(getBackground());
         dbGraphics.fillRect(0, 0, width, height);
         paint(dbGraphics);
-        insets = getInsets(); // read fresh each frame; a one-time read can be stale
+        insets = getInsets();  // read every frame, a one time read can be wrong
         g.drawImage(dbImage, insets.left, insets.top, this);
     }
 
     //@Override
     public void paint(Graphics screenGraphics) {
-        // Reset font each frame so the clock's bigger font doesn't carry over.
+        // reset the font each frame, the clock uses a bigger one
         screenGraphics.setFont(new Font("SansSerif", Font.PLAIN, 12));
 
-        // Scenery behind everything else. Fixed on screen (not panned), like
-        // a sky, so dragging the map never leaves a gap behind it.
+        // pictures stay fixed when the map is dragged
         if (skyImage != null) {
             screenGraphics.drawImage(skyImage, 0, 0, width, height, this);
         }
@@ -302,12 +283,11 @@ public class Panel extends Frame{
             screenGraphics.drawImage(treeImage, 0, 0, width, height, this);
         }
 
-        // Map layer: shifted by the pan offset, so dragging moves the network
-        // and stations without moving the side panels drawn later.
+        // the map layer moves with the drag, the side panels do not
         Graphics g = screenGraphics.create();
         g.translate(panOffsetX, panOffsetY);
 
-        // Set Stroke Thickness
+        // line thickness
         Graphics2D g2d=(Graphics2D) g;
         g2d.setStroke(new BasicStroke(3));
         //Draw Train Lines 
@@ -498,9 +478,8 @@ public class Panel extends Frame{
         g.setColor(Color.black);
         g.drawOval(width/2 -normalStation/2 -400, height/2 -normalStation/2 +300, normalStation, normalStation); 
         
-        //count up to 16
 
-        // A burning station gets a red outline over its black one.
+        // burning stations get a red outline
         drawFireOutlines(g);
 
         //Vehicles
@@ -509,11 +488,10 @@ public class Panel extends Frame{
         train3.displayVehicle(g, 255, 0, 255);
         train4.displayVehicle(g, 0, 255, 0);
 
-        // Done with the map layer.
+        // end of the map layer
         g.dispose();
 
-        // Side panels: drawn on the untranslated graphics, so dragging the
-        // map never moves them.
+        // side panels are drawn last so the drag does not move them
         sidePanel.display(screenGraphics, width, height, time,
                 new Vehicles[]{train1, train2, train3, train4});
         
@@ -523,8 +501,7 @@ public class Panel extends Frame{
 
     }
 
-    // The home screen is always the true entry point, even if this class is
-    // run directly, so the app never skips straight into the simulation.
+    // always start from the home screen
     public static void main(String[] args) {
         new Home();
     }

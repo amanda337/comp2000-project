@@ -1,12 +1,9 @@
 import java.util.Arrays;
 import java.util.PriorityQueue;
 
-// The event system in one file: the base type (SimulationEvent), the one
-// event we have (AccidentEvent), and the queue that holds them (EventQueue).
+// events, in one file: SimulationEvent, AccidentEvent and EventQueue
 
-// Base type for anything that can be scheduled and later run against the
-// trains. Ordered by the step it is due on, so an EventQueue always hands
-// out the earliest due event first.
+// anything that can be scheduled, ordered by the step it is due
 public abstract class SimulationEvent implements Comparable<SimulationEvent> {
 
     private final long step;
@@ -19,7 +16,7 @@ public abstract class SimulationEvent implements Comparable<SimulationEvent> {
         return step;
     }
 
-    // Applies this event's effect to the running trains.
+    // runs the event on the trains
     public abstract void execute(Vehicles[] trains);
 
     @Override
@@ -28,8 +25,7 @@ public abstract class SimulationEvent implements Comparable<SimulationEvent> {
     }
 }
 
-// A scheduled accident: once its step is reached, it stops one named train
-// at its current stop for a number of steps.
+// accident: delays one named train for a number of steps
 class AccidentEvent extends SimulationEvent {
 
     private final String trainName;
@@ -49,28 +45,23 @@ class AccidentEvent extends SimulationEvent {
     }
 }
 
-// A queue of simulation events that always returns the earliest-due one
-// first. "T extends SimulationEvent" means only real events can be added,
-// while still letting different event subclasses share one queue.
-//
-// A PriorityQueue is not thread-safe. Panel adds the accidents on whichever
-// thread builds the window while the Swing timer thread removes them, so every
-// method locks the queue (synchronized). hasDueEvent() followed by
-// nextEvent() is still two separate calls, which is safe only because a
-// single thread (the timer) drains the queue.
+// holds events, the earliest one comes out first
+// the methods are synchronized because the window thread adds and the timer removes
 class EventQueue<T extends SimulationEvent> {
 
     private final PriorityQueue<T> events = new PriorityQueue<>();
 
+    // puts an event in the queue
     public synchronized void add(T event){
         events.add(event);
     }
 
-    // True if the earliest queued event is due by the given step.
+    // true if the earliest event is due by this step
     public synchronized boolean hasDueEvent(long step){
         return !events.isEmpty() && events.peek().getStep() <= step;
     }
 
+    // takes out the earliest event
     public synchronized T nextEvent(){
         return events.poll();
     }

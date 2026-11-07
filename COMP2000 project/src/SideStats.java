@@ -6,16 +6,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-// The "Statistics" view: one row per train with how many passengers it has
-// delivered, the average wait and the on-time %, plus a total row.
-//
-// Nothing in Passenger records these numbers, so SidePanel calls update() every
-// frame and this class works them out by watching the trains:
-//   delivered    - a passenger who was aboard last frame and is gone now got off
-//   average wait - minutes a passenger spent sitting in a delayed or stopped
-//                  train (waiting at a platform is not tracked)
-//   on time %    - share of service time the train was running, not delayed
-//                  or stopped
+// the "Statistics" view: delivered, average wait and on-time % for each train, and in total.
+// the passengers do not record these, so update() works them out by watching the trains:
+// delivered = was on board last frame and gone now, average wait = minutes a passenger
+// sat in a delayed or stopped train, on time = share of service time the train was running
 public class SideStats implements SideView {
 
     private final int leftX;
@@ -26,20 +20,20 @@ public class SideStats implements SideView {
     private final Color headerRow = new Color(190, 190, 190);
     private final Color gridLine = new Color(170, 170, 170);
 
-    // The numbers for one train.
+    // the numbers for one train
     private static class Row {
         int delivered = 0;
         int aboard = 0;
-        long serviceSeconds = 0;        // time the train was meant to be running
-        long lateSeconds = 0;           // ...of which delayed or stopped
-        long waitPassengerSeconds = 0;  // passengers x seconds in a late train
+        long serviceSeconds = 0;  // time the train should be running
+        long lateSeconds = 0;  // part of that spent delayed or stopped
+        long waitPassengerSeconds = 0;  // passengers times seconds in a late train
         List<Passenger> lastOnBoard = new ArrayList<>();
 
         int carried() {
             return delivered + aboard;
         }
 
-        // Adds another row's numbers into this one (used for the ALL row).
+        // adds another row into this one, used for the ALL row
         void add(Row other) {
             delivered += other.delivered;
             aboard += other.aboard;
@@ -63,7 +57,7 @@ public class SideStats implements SideView {
         }
     }
 
-    // Column x positions.
+    // column x positions
     private final int colTrain;
     private final int colDelivered;
     private final int colWait;
@@ -87,7 +81,7 @@ public class SideStats implements SideView {
         return rightX;
     }
 
-    // Called once per frame by SidePanel, whichever view is showing.
+    // called every frame by SidePanel, whichever view is showing
     public void update(Vehicles[] trains, Time time) {
         long passed = time.simSeconds - lastSeconds;
         lastSeconds = time.simSeconds;
@@ -114,6 +108,7 @@ public class SideStats implements SideView {
         }
     }
 
+    // title, header, one row for each train, then the ALL row
     @Override
     public void draw(Graphics g, int panelHeight, Vehicles[] trains, Time time) {
         int w = rightX - leftX;
@@ -156,7 +151,7 @@ public class SideStats implements SideView {
             rowY += 46;
         }
 
-        // Total row: collect() builds one empty Row, then adds every train's Row into it.
+        // total row: collect() adds every train row into one empty row
         Row total = rows.values().stream().collect(Row::new, Row::add, Row::add);
 
         g.setColor(Color.black);
@@ -172,7 +167,7 @@ public class SideStats implements SideView {
                 leftX + 20, rowY + 62);
     }
 
-    // The three numbers of a row, in their columns (used for each train and for ALL).
+    // the three numbers of a row, used for each train and for ALL
     private void drawNumbers(Graphics g, int y, Row row) {
         g.drawString(String.valueOf(row.delivered), colDelivered, y);
         g.drawString(String.format("%.1f min", row.averageWaitMinutes()), colWait, y);

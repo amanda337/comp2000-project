@@ -1,6 +1,6 @@
 import java.util.ArrayList;
 import java.util.Objects;
-import java.util.function.IntSupplier;
+//import java.util.function.IntSupplier;  // only used by the unused code below
 
 public class Stops {
     int x;
@@ -8,7 +8,7 @@ public class Stops {
     String name;
     int capacity;
     int totalComuters = 0;
-    boolean onFire = false; // set by Fire; Vehicles draws a flame at a burning stop
+    boolean onFire = false;  // set by Fire, drawn red on the map
 
     public Stops(int x, int y, String name, int capacity) {
         this.x = x;
@@ -17,7 +17,7 @@ public class Stops {
         this.capacity = capacity;
     }
 
-    // Named stops with pixel positions matching where Panel draws them.
+    // every station with its x and y on the map
     public static final Stops TownHall = new Stops(640, 60, "Town Hall", 100);
     public static final Stops Eagleston = new Stops(640, 160, "Eagleston", 50);
     public static final Stops Rosebury = new Stops(640, 260, "Rosebury", 50);
@@ -57,10 +57,10 @@ public class Stops {
     //     }
     //     return boardingTime;
     // }   
-    IntSupplier checkCapacity = () -> (totalComuters >= capacity / 3) ? 5 : 0;
+    // IntSupplier checkCapacity = () -> (totalComuters >= capacity / 3) ? 5 : 0;
 
 
-    // Same name means same station, so curStop.equals(end) works reliably.
+    // same name means same station
     @Override
     public boolean equals(Object obj) {
         if (this == obj) return true;
@@ -88,7 +88,7 @@ class Routes {
         this.stations = stations;
     }
 
-    // The full red line, running past Percy Port to its actual end.
+    // red line, stops in order
     public static Routes redLine() {
         ArrayList<Stops> stops = new ArrayList<>();
         stops.add(Stops.TownHall);
@@ -102,6 +102,7 @@ class Routes {
         stops.add(Stops.Brookchester);
         return new Routes("Red Line", stops);
     }
+    // blue line
     public static Routes blueLine() {
         ArrayList<Stops> stops = new ArrayList<>();
         stops.add(Stops.SunsetPoint);
@@ -132,6 +133,7 @@ class Routes {
         stops.add(Stops.TrollUponBridge);
         return new Routes("Purple Line", stops);
     }
+    // green line
     public static Routes greenLine() {
         ArrayList<Stops> stops = new ArrayList<>();
         stops.add(Stops.Central);

@@ -1,10 +1,6 @@
-// The project's two custom exceptions. Both are checked on purpose, so the
-// code that can trigger them is forced to decide what to do.
+// the two custom exceptions, both checked
 
-// Thrown when the simulated clock leaves the allowed service window
-// (the trains only run from 06:00 AM to midnight). advance() declares
-// "throws SimulationTimeException" so the tick loop must handle it when
-// service starts or ends.
+// thrown when service opens or closes (trains run 06:00 AM to midnight)
 public class SimulationTimeException extends Exception {
 
     public SimulationTimeException(String message) {
@@ -12,8 +8,7 @@ public class SimulationTimeException extends Exception {
     }
 }
 
-// Thrown when a weather spell or a fire is asked to last longer than its limit
-// (for example fog for 45 minutes when fog is capped at 30).
+// thrown when a weather or fire is asked to last longer than its limit
 class DurationLimitException extends Exception {
 
     public DurationLimitException(String what, int minutes, int maxMinutes) {

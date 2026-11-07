@@ -1,15 +1,14 @@
 import java.util.ArrayList;
-import java.util.function.Consumer;
+//import java.util.function.Consumer;  // only used by the unused code below
 
 public class Passenger {
-    // A commuter with a fixed random start and end stop on one line.
-    // checkBoarding compares a train's current stop against start/end, so
-    // the passenger boards and alights without needing its own position.
+    // a commuter with a random start and end stop on one line
 
     private String name;
     private Stops start;
     private Stops end;
 
+    // picks a random start and end stop
     public Passenger(String name) {
         this.name = name;
         this.start = startPoint(allRoutes()).get(0);
@@ -17,7 +16,7 @@ public class Passenger {
     }
 
     public static ArrayList<Routes> allRoutes(){
-        // adds all the trainlines into one array for easy accsess
+        // all four train lines in one list
         ArrayList<Routes> totalRoutes = new ArrayList<>();
         totalRoutes.add(Routes.redLine());
         totalRoutes.add(Routes.blueLine());
@@ -26,10 +25,10 @@ public class Passenger {
         return totalRoutes;
     }
 
-    public static void spawnPassengers(){
-        //Spawns 100 Passangers every 60 tick or 30 in gmae mintues.
-        startPoint(allRoutes());
-    }
+    // unused: only picks a start and end, no passenger is created from it yet
+    // public static void spawnPassengers(){
+    //     startPoint(allRoutes());
+    // }
     // Consumer<Time> spawnPassengers = time ->{
     //     if(time.ticks % 60 == 0){
     //         for(int i =0;i<100;i++){
@@ -39,14 +38,13 @@ public class Passenger {
     //     };
 
     public static ArrayList<Stops> startPoint(ArrayList<Routes> route){
-        // Returns a start end stop through an arraylist with pos 0 being start
-        // and pos 1 being end. using random math for spawn locations
+        // random start (position 0) and end (position 1) stop
         ArrayList<Stops> startEnd = new ArrayList<>();
         Stops startpoint;
         Stops endpoint;
         int randomRoute = (int) (Math.random() * (route.size() - 1)) ;
         Routes routes;
-        // keeps start and stop on the same route to avoid swaping
+        // start and end are on the same line
         routes = route.get(randomRoute);
         int randomStart = (int) (Math.random() * (routes.stations.size() - 1)) + 0;
         int randomEnd = (int) (Math.random() * (routes.stations.size() -  1)) + 0;
@@ -63,12 +61,12 @@ public class Passenger {
         return name;
     }
 
-    // Example passenger commuting between Jubilee and Percy Port.
+    // the one passenger the simulation uses
     public static Passenger pass1() {
         return new Passenger("pass1");
     }
 
-    // Boards this passenger when curStop matches start, disembarks at end.
+    // gets on at the start stop and off at the end stop
     public void checkBoarding(Stops curStop, ArrayList<Passenger> onBoard) {
         if (curStop.equals(start) && !onBoard.contains(this)) {
             onBoard.add(this);

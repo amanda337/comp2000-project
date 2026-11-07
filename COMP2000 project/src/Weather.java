@@ -12,8 +12,9 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-// Weather and Fire in one file.
+// weather and fire share this file with HazardRule and Spell (shared helpers)
 
+// one weather for the whole map, a new one starts when the time is up
 public class Weather {
 
     public enum Type {
@@ -35,6 +36,7 @@ public class Weather {
     private boolean changed = false;
     private final List<Type> history = new ArrayList<>();
 
+    // starts it, refuses a time over the limit
     public void begin(Type next, int minutes, long nowSeconds)
             throws DurationLimitException {
         spell.start(next.rule, minutes, nowSeconds);
@@ -43,6 +45,7 @@ public class Weather {
         changed = true;
     }
 
+    // picks a new weather when the current one is over
     public void update(long nowSeconds, int hourOfDay) {
         if (!spell.isOver(nowSeconds)) {
             return;
@@ -58,6 +61,7 @@ public class Weather {
         }
     }
 
+    // picks the next weather from what suits the hour
     private Type pickFor(int hour) {
         List<Type> choices;
 
@@ -75,8 +79,7 @@ public class Weather {
             choices = Arrays.asList(Type.FOG, Type.CLOUDY);
         }
 
-        // A spell never repeats the weather it follows, and rain and fog never
-        // follow each other.
+        // not the same weather again, and never rain straight to fog or fog to rain
         List<Type> different = choices.stream()
                 .filter(t -> t != type)
                 .filter(t -> !clashes(type, t))
@@ -85,25 +88,30 @@ public class Weather {
         return GenericUtil.randomItem(different, random);
     }
 
+    // rain and fog must not follow each other
     private static boolean clashes(Type from, Type to) {
         return (from == Type.RAIN && to == Type.FOG)
                 || (from == Type.FOG && to == Type.RAIN);
     }
 
+    // true once after each change, so delays are rolled once
     public boolean takeChange() {
         boolean result = changed;
         changed = false;
         return result;
     }
 
+    // each train may be delayed, the chance depends on the weather
     public void rollDelays(Vehicles[] trains) {
         type.rule.delay(Arrays.stream(trains), random);
     }
 
+    // fog stops every train
     public boolean stopsTrains() {
         return type == Type.FOG;
     }
 
+    // no fire in rain or fog
     public boolean allowsFire() {
         return type == Type.SUNNY || type == Type.CLOUDY;
     }
@@ -112,6 +120,7 @@ public class Weather {
         return type.rule.label;
     }
 
+    // how many of each weather so far, e.g. Cloudy 2, Foggy 1
     public String summary() {
         Map<String, Long> counts = history.stream()
                 .collect(Collectors.groupingBy(
@@ -125,6 +134,7 @@ public class Weather {
     }
 }
 
+// a fire that starts at one station and can spread, never in rain or fog
 class Fire {
 
     public enum Size {
@@ -157,8 +167,7 @@ class Fire {
     private long lastStartSeconds = 0;
     private int changesWithoutFire = 0;
 
-    // Trains already checked on this visit to the fire, and whether a small
-    // fire has used up its one delay.
+    // trains already checked at this fire, and if a small fire has used its one delay
     private final Set<Vehicles> passed = new HashSet<>();
     private boolean smallFireDelayed = false;
 
@@ -166,6 +175,7 @@ class Fire {
             burning.contains(train.getCurStop())
                     || burning.contains(train.getNextStop());
 
+    // starts it, refuses a time over the limit
     public void begin(Size newSize, Stops where, int minutes, long nowSeconds)
             throws DurationLimitException {
         spell.start(newSize.rule, minutes, nowSeconds);
@@ -175,6 +185,7 @@ class Fire {
         burning.add(where);
     }
 
+    // called on each weather change: rain or fog puts the fire out, otherwise a new one may start
     public void maybeStart(
             Weather weather,
             Vehicles[] trains,
@@ -184,7 +195,7 @@ class Fire {
 
         if (!weather.allowsFire()) {
             putOut();
-            lastSize = Size.NONE; // rain or fog ends the build-up completely
+            lastSize = Size.NONE;  // rain or fog also ends the build-up
             lastStartSeconds = 0;
             return;
         }
@@ -230,10 +241,8 @@ class Fire {
         smallFireDelayed = false;
     }
 
-    // Called every frame. A train that reaches a burning station (or is about
-    // to) gets one roll per visit: a small fire delays one train in total, a
-    // medium fire can delay every train that passes. A large fire does not
-    // delay, it stops the train (see stops).
+    // called every frame: a train that reaches a burning stop gets one chance of a delay,
+    // a small fire delays one train only, a large fire stops trains instead
     public void affectPassingTrains(Vehicles[] trains) {
         if (size == Size.NONE || size == Size.LARGE) {
             return;
@@ -242,10 +251,10 @@ class Fire {
         List<Vehicles> near = Arrays.stream(trains)
                 .filter(nearFire)
                 .collect(Collectors.toList());
-        passed.retainAll(near); // a train that has moved on is rolled again next visit
+        passed.retainAll(near);  // forget trains that moved on, they can be hit again later
 
         near.stream()
-                .filter(passed::add) // only trains that have just arrived
+                .filter(passed::add)  // only trains that just arrived
                 .filter(train -> size != Size.SMALL || !smallFireDelayed)
                 .filter(train -> random.nextDouble() < size.rule.delayChance)
                 .forEach(train -> {
@@ -256,6 +265,7 @@ class Fire {
                 });
     }
 
+    // small fires are most common, a recent small or medium fire makes a bigger one more likely
     private Size pickSize(long nowSeconds) {
         double[] odds = {0.5, 0.3, 0.2};
 
@@ -282,6 +292,7 @@ class Fire {
         return Size.LARGE;
     }
 
+    // makes one chance 50% bigger and shrinks the others to fit
     private double[] raise(double[] odds, int which) {
         double raised = odds[which] * BUILD_UP;
         double shrink = (1 - raised) / (1 - odds[which]);
@@ -299,6 +310,7 @@ class Fire {
         return result;
     }
 
+    // medium fire reaches 2 more stops at most, large keeps going until 4 or 5 burn
     private void spread(Size newSize, Stops start, Vehicles[] trains) {
         if (newSize == Size.MEDIUM) {
             for (Stops next : neighboursOf(start, trains)) {
@@ -308,7 +320,7 @@ class Fire {
                 }
             }
         } else if (newSize == Size.LARGE) {
-            // Keep adding a station next to the fire until 4 or 5 are burning.
+            // add a stop next to the fire until 4 or 5 burn
             int target = 4 + random.nextInt(2);
 
             while (burning.size() < target) {
@@ -328,8 +340,7 @@ class Fire {
         }
     }
 
-    // The stations right before and after this one on any train's line, e.g.
-    // Central touches Rosebury, Jubilee and Sherie Grove.
+    // stops before and after this one on any line, e.g. Central touches Rosebury and Jubilee
     private List<Stops> neighboursOf(Stops stop, Vehicles[] trains) {
         return Arrays.stream(trains)
                 .map(train -> train.route.stations)
@@ -338,7 +349,7 @@ class Fire {
                 .collect(Collectors.toList());
     }
 
-    // The stop before and the stop after on one line (none if it is not on it).
+    // the stop before and after on one line, none if it is not on the line
     private Stream<Stops> neighboursOnLine(List<Stops> line, Stops stop) {
         int i = line.indexOf(stop);
         if (i < 0) {
@@ -349,12 +360,14 @@ class Fire {
                 .map(line::get);
     }
 
+    // a fire never burns longer than its limit
     public void endIfOver(long nowSeconds) {
         if (size != Size.NONE && spell.isOver(nowSeconds)) {
             putOut();
         }
     }
 
+    // clears the fire and its timer
     private void putOut() {
         size = Size.NONE;
         setFlames(false);
@@ -363,14 +376,17 @@ class Fire {
         spell.reset();
     }
 
+    // marks the burning stops so the map can draw them
     private void setFlames(boolean on) {
         burning.forEach(stop -> stop.onFire = on);
     }
 
+    // a large fire stops trains that are at or next to a burning stop
     public boolean stops(Vehicles train) {
         return size == Size.LARGE && nearFire.test(train);
     }
 
+    // text for the top bar, e.g. Fire: Medium fire at Central +2
     public String getText() {
         return burning.stream()
                 .findFirst()
@@ -387,6 +403,7 @@ class Fire {
     }
 }
 
+// numbers for one weather or fire: delay chance, delay steps, longest time
 class HazardRule {
 
     private static final int MIN_MINUTES = 15;
@@ -407,18 +424,21 @@ class HazardRule {
         this.maxMinutes = maxMinutes;
     }
 
+    // refuses a time below 1 or over the limit
     void check(int minutes) throws DurationLimitException {
         if (minutes < 1 || minutes > maxMinutes) {
             throw new DurationLimitException(label, minutes, maxMinutes);
         }
     }
 
+    // random length from 15 minutes up to the limit, in steps of 5
     int randomMinutes(Random random) {
         return MIN_MINUTES
                 + 5 * random.nextInt(
                         (maxMinutes - MIN_MINUTES) / 5 + 1);
     }
 
+    // each train in the stream is delayed with this rule's chance
     void delay(Stream<Vehicles> trains, Random random) {
         trains.filter(train ->
                         random.nextDouble() < delayChance)
@@ -426,8 +446,10 @@ class HazardRule {
     }
 }
 
+// remembers when the current weather or fire ends
 class Spell {
 
+    // the clock jumps about 5 minutes, so end one step early
     private static final long STEP_GUARD_SECONDS = 330;
 
     private long endSeconds = 0;
@@ -440,15 +462,17 @@ class Spell {
         endSeconds = nowSeconds + minutes * 60L;
     }
 
-    // Back to "not running", used when a fire is put out.
+    // back to not running, used when a fire is put out
     void reset() {
         endSeconds = 0;
     }
 
+    // keeps going 15 more minutes
     void extend(long nowSeconds) {
         endSeconds = nowSeconds + 15 * 60L;
     }
 
+    // true when the end time is near, so a spell never passes its limit
     boolean isOver(long nowSeconds) {
         return nowSeconds >= endSeconds - STEP_GUARD_SECONDS;
     }

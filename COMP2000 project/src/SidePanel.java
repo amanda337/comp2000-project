@@ -5,36 +5,33 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-// The fixed UI: the top bar (Time|Day box, home and pause buttons) and one of
-// three left views: SideTrain (list of trains), SideTable (timetable) or
-// SideStats (statistics).
-// SidePanel is the context of a State pattern: `view` is the current state and
-// does the drawing and the scrolling. Three chevron tabs on the view's right
-// edge switch state; their positions never swap, only colour and width change.
+// the fixed part of the screen: top bar (clock, speed, home, pause) and one of three left views.
+// view is the current state (State pattern) and does the drawing and scrolling,
+// the three tabs next to it switch the view
 public class SidePanel {
 
     int topHeight = 70;
-    int leftWidth = 320;   // width of the SideTrain panel
-    int tableWidth = 960;  // right edge of the SideTable panel
+    int leftWidth = 320;  // width of the train list
+    int tableWidth = 960;  // right edge of the table
 
-    int topButtonSize = 44; // shared by the pause and home buttons
+    int topButtonSize = 44;  // pause and home buttons
     int pauseMargin = 20;
-    int homeGap = 10;       // gap between the home button and the pause button
+    int homeGap = 10;  // gap between the home and pause buttons
 
-    // Tabs are snug by default and a little wider while the mouse hovers.
+    // tabs are narrower until the mouse is over them
     int tabShortWidth = 100;
     int tabFullWidth = 135;
     int tabHeight = 40;
-    int tabPoint = 14;   // length of the pointed tip
-    int tabGap = 10;     // vertical gap between tabs
+    int tabPoint = 14;  // length of the pointed end
+    int tabGap = 10;  // gap between tabs
 
     boolean pauseHover = false;
     boolean homeHover = false;
 
-    // Speed buttons (1x 2x 4x) sit left of the home button.
+    // speed buttons (1x 2x 4x) sit left of the home button
     int speedButtonWidth = 40;
-    int speedHover = -1;   // index in Speed.OPTIONS under the mouse, or -1
-    Time time;             // remembered from display() so a click can change its speed
+    int speedHover = -1;  // index in Speed.OPTIONS under the mouse, or -1
+    Time time;  // kept from display() so a click can change the speed
 
     Color darkBar = new Color(45, 45, 45);
     Color accentLine = new Color(30, 144, 255);
@@ -49,8 +46,8 @@ public class SidePanel {
     SideStats sideStats = new SideStats(0, topHeight, 640);
     SideView view = sideTrain;
 
-    // One tab: the view it switches to, its place in the column (0 is the top)
-    // and whether the mouse is over it. A new view needs one new line below.
+    // one tab: its view, its place in the column (0 is the top) and if the mouse is over it.
+    // a new view only needs one more line in the tabs list
     private static class Tab {
         final int row;
         final String label;
@@ -63,7 +60,7 @@ public class SidePanel {
             this.view = view;
         }
 
-        // Returns true if the hover state changed.
+        // true if the hover state changed
         boolean setHover(boolean now) {
             boolean changed = now != hover;
             hover = now;
@@ -80,18 +77,18 @@ public class SidePanel {
         return leftWidth;
     }
 
-    // True if (x, y) is over the fixed UI rather than the draggable map.
+    // true if the point is on the fixed part, not on the map
     public boolean isOverPanel(int x, int y, int panelWidth, int panelHeight) {
         return y < topHeight || x < view.rightEdge() || isOverAnyTab(x, y);
     }
 
+    // draws the tint, top bar, current view and tabs
     public void display(Graphics g, int panelWidth, int panelHeight, Time time, Vehicles[] trains) {
         this.time = time;
-        time.applyEvents(trains); // weather and fire effects on the trains
-        sideStats.update(trains, time); // statistics are counted whichever view shows
+        time.applyEvents(trains);  // weather and fire effects on the trains
+        sideStats.update(trains, time);  // statistics count whichever view shows
 
-        // Day-night tint over the map. The bars and panels are drawn after
-        // it, so only the map and the trains are tinted.
+        // day and night tint over the map, the panels are drawn after it
         g.setColor(time.dayTint());
         g.fillRect(0, 0, panelWidth, panelHeight);
 
@@ -100,13 +97,14 @@ public class SidePanel {
         drawTabs(g);
     }
 
+    // clock box, weather and fire text, speed, home and pause buttons
     private void drawTopBar(Graphics g, int panelWidth, Time time) {
         g.setColor(darkBar);
         g.fillRect(0, 0, panelWidth, topHeight);
         g.setColor(accentLine);
         g.fillRect(0, topHeight - 3, panelWidth, 3);
 
-        // Big box: clock on top, date underneath.
+        // clock box: time on top, date below
         int boxX = 12;
         int boxY = 8;
         int boxW = 300;
@@ -121,7 +119,7 @@ public class SidePanel {
         g.setFont(new Font("SansSerif", Font.PLAIN, 13));
         g.drawString(time.getDateText(), boxX + 14, boxY + 45);
 
-        // Weather and fire, stacked next to the clock box.
+        // weather and fire text next to the clock box
         int infoX = boxX + boxW + 24;
         g.setFont(new Font("SansSerif", Font.BOLD, 13));
         g.setColor(Color.white);
@@ -140,15 +138,15 @@ public class SidePanel {
         drawPauseButton(g, panelWidth, time.isRunning());
     }
 
-    // Speed buttons
+    // speed buttons
 
-    // Left edge of the i-th speed button: they end one gap before the home button.
+    // left edge of each speed button, they end just before the home button
     private int speedX(int panelWidth, int i) {
         int count = Speed.OPTIONS.length;
         return homeX(panelWidth) - homeGap - (count - i) * speedButtonWidth;
     }
 
-    // Index of the speed button at (x, y), or -1 if none.
+    // index of the speed button at this point, -1 if none
     private int speedIndexAt(int mouseX, int mouseY, int panelWidth) {
         for (int i = 0; i < Speed.OPTIONS.length; i++) {
             if (inRect(mouseX, mouseY, speedX(panelWidth, i), buttonY(), speedButtonWidth, topButtonSize)) {
@@ -158,7 +156,7 @@ public class SidePanel {
         return -1;
     }
 
-    // Three side-by-side boxes; the one matching the current speed is dark.
+    // three boxes side by side, the current speed is blue
     private void drawSpeedButtons(Graphics g, int panelWidth, int current) {
         g.setFont(new Font("SansSerif", Font.BOLD, 14));
         for (int i = 0; i < Speed.OPTIONS.length; i++) {
@@ -176,7 +174,7 @@ public class SidePanel {
         }
     }
 
-    // Top-bar pause and home buttons
+    // pause and home buttons
 
     private int pauseX(int panelWidth) {
         return panelWidth - topButtonSize - pauseMargin;
@@ -186,7 +184,7 @@ public class SidePanel {
         return pauseX(panelWidth) - topButtonSize - homeGap;
     }
 
-    // Both buttons are vertically centred in the bar.
+    // both buttons are centred in the bar
     private int buttonY() {
         return (topHeight - topButtonSize) / 2;
     }
@@ -211,6 +209,7 @@ public class SidePanel {
         return changed;
     }
 
+    // one of two colours
     private Color pick(boolean on, Color yes, Color no) {
         if (on) {
             return yes;
@@ -218,7 +217,7 @@ public class SidePanel {
         return no;
     }
 
-    // The square every top-bar button starts from.
+    // the square box every button starts from
     private void drawButtonBox(Graphics g, int x, int y, boolean hover) {
         g.setColor(pick(hover, buttonHoverFill, buttonFill));
         g.fillRect(x, y, topButtonSize, topButtonSize);
@@ -226,7 +225,7 @@ public class SidePanel {
         g.drawRect(x, y, topButtonSize, topButtonSize);
     }
 
-    // House icon: a roof triangle over a body, with a door cut-out.
+    // house icon: roof, body and door
     private void drawHomeButton(Graphics g, int panelWidth) {
         int x = homeX(panelWidth);
         int y = buttonY();
@@ -242,6 +241,7 @@ public class SidePanel {
         g.fillRect(x + topButtonSize / 2 - 3, y + 27, 6, 9); // door
     }
 
+    // pause bars while running, play triangle while paused
     private void drawPauseButton(Graphics g, int panelWidth, boolean running) {
         int x = pauseX(panelWidth);
         int y = buttonY();
@@ -258,7 +258,7 @@ public class SidePanel {
         }
     }
 
-    // View-switch tabs
+    // tabs that switch the view
 
     private int tabY(Tab tab) {
         return topHeight + 16 + tab.row * (tabHeight + tabGap);
@@ -271,11 +271,13 @@ public class SidePanel {
         return tabShortWidth;
     }
 
+    // draws every tab next to the current view
     private void drawTabs(Graphics g) {
         int x = view.rightEdge();
         tabs.forEach(tab -> drawTab(g, x, tabY(tab), tab.label, view == tab.view, tab.hover));
     }
 
+    // pointed tab, light when its view is the current one
     private void drawTab(Graphics g, int x, int y, String label, boolean active, boolean hover) {
         int w = tabWidth(hover);
         int[] xs = {x, x + w, x + w + tabPoint, x + w, x};
@@ -291,13 +293,12 @@ public class SidePanel {
         g.drawString(label, x + 10, y + tabHeight / 2 + 5);
     }
 
-    // The hit area is as wide as a tab ever gets, so hovering near a short tab
-    // grows it and is easy to click once grown.
+    // the click area is as wide as a tab gets, so a narrow tab is still easy to hit
     private boolean inTab(int mouseX, int mouseY, int tabY) {
         return inRect(mouseX, mouseY, view.rightEdge(), tabY, tabFullWidth + tabPoint, tabHeight);
     }
 
-    // The tab under the mouse, if any (empty when the mouse is over none).
+    // the tab under the mouse, empty if none
     private Optional<Tab> tabAt(int mouseX, int mouseY) {
         return tabs.stream()
                 .filter(tab -> inTab(mouseX, mouseY, tabY(tab)))
@@ -308,9 +309,8 @@ public class SidePanel {
         return tabAt(mouseX, mouseY).isPresent();
     }
 
-    // Each tab always switches to its own view. A click on a speed button is
-    // handled here too (Panel already calls this for every click and repaints
-    // when it returns true), so Panel needs no change for the speed buttons.
+    // a click on a tab switches the view, a click on a speed button changes the speed
+    // (Panel already calls this on every click, so Panel needs no extra code)
     public boolean handleTabClick(int mouseX, int mouseY, int panelWidth) {
         int speedIndex = speedIndexAt(mouseX, mouseY, panelWidth);
         if (speedIndex >= 0 && time != null) {
@@ -322,8 +322,9 @@ public class SidePanel {
         return clicked.isPresent();
     }
 
-    // Pointer and scroll calls go straight to the current view.
+    // pointer and scroll calls go to the current view
 
+    // updates hover states, true if anything changed
     public boolean setPointer(int x, int y) {
         boolean changed = view.setPointer(x, y);
 
@@ -351,30 +352,29 @@ public class SidePanel {
         view.setThumbDragging(dragging);
     }
 
+    // true if the point is inside the rectangle
     private boolean inRect(int px, int py, int x, int y, int w, int h) {
         return px >= x && px <= x + w && py >= y && py <= y + h;
     }
 }
 
-// One of the three left-hand views (State pattern). SidePanel holds exactly one
-// at a time and passes every draw and mouse call to it, so switching view
-// changes behaviour without any "if table is open" checks in SidePanel.
+// the left views (State pattern), SidePanel passes draw and mouse calls to the current one
 interface SideView {
 
     int MINUTES_BETWEEN_STOPS = 3;
 
     Map<String, Color> LINE_COLOURS = Map.of(
-            "T1", new Color(255, 0, 0),    // Red Line
-            "T2", new Color(0, 0, 255),    // Blue Line
-            "T3", new Color(191, 0, 255),  // Purple Line
-            "T4", new Color(0, 160, 0));   // Green Line
+            "T1", new Color(255, 0, 0),  // red line
+            "T2", new Color(0, 0, 255),  // blue line
+            "T3", new Color(191, 0, 255),  // purple line
+            "T4", new Color(0, 160, 0));  // green line
 
     void draw(Graphics g, int panelHeight, Vehicles[] trains, Time time);
 
-    // x of the view's right edge; the tabs sit just outside it.
+    // right edge of the view, the tabs sit just outside it
     int rightEdge();
 
-    // Only the train list scrolls, so the other view keeps these no-ops.
+    // only the train list scrolls, the other views do nothing here
     default boolean setPointer(int x, int y) {
         return false;
     }
@@ -392,12 +392,12 @@ interface SideView {
     default void setThumbDragging(boolean dragging) {
     }
 
-    // The colour a train shares with its line on the map.
+    // the colour a train shares with its line on the map
     static Color lineColour(String trainName) {
         return LINE_COLOURS.getOrDefault(trainName, Color.gray);
     }
 
-    // "-" when the train has no next stop.
+    // "-" when there is no next stop
     static String nextStopName(Vehicles train) {
         return Optional.ofNullable(train.getNextStop()).map(Stops::getName).orElse("-");
     }

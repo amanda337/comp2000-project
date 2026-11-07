@@ -6,13 +6,9 @@ import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.geom.Area;
 
-// The small drawing helpers for trouble on the map, in one file:
-// HazardStripe (a delayed train), StopSign (a stopped train) and Flame (a
-// burning station). Each one only has a static draw method.
+// drawing helpers for the map: stripe (delayed), stop sign (stopped), flame (fire)
 
-// Draws a yellow/red diagonal caution-stripe border around the outside of a
-// box. Used to flag a delayed train, both on its side-panel card and on its
-// map icon.
+// yellow and red diagonal border around a box, marks a delayed train
 public class HazardStripe {
 
     public static void draw(Graphics g, int x, int y, int width, int height, int thickness) {
@@ -45,17 +41,16 @@ public class HazardStripe {
     }
 }
 
-// A small red stop sign (octagon with a white "STOP" label), drawn on a train
-// that cannot move at all. A merely delayed train gets HazardStripe instead.
+// red stop sign, drawn on a train that cannot move
 class StopSign {
 
-    // (centreX, centreY) is the middle of the sign; size is its width and height.
+    // middle of the sign and its size
     public static void draw(Graphics g, int centreX, int centreY, int size) {
         double radius = size / 2.0;
         int[] xs = new int[8];
         int[] ys = new int[8];
         for (int i = 0; i < 8; i++) {
-            // Eight corners, turned 22.5 degrees so the flat sides face up and down.
+            // eight corners, turned so the flat sides face up and down
             double angle = Math.toRadians(22.5 + i * 45);
             xs[i] = (int) Math.round(centreX + radius * Math.cos(angle));
             ys[i] = (int) Math.round(centreY + radius * Math.sin(angle));
@@ -73,8 +68,7 @@ class StopSign {
     }
 }
 
-// A small flame icon drawn above a burning station: an orange flame with a
-// yellow core. (centreX, bottomY) is the middle of its base; size is its height.
+// small flame next to a burning station
 class Flame {
 
     public static void draw(Graphics g, int centreX, int bottomY, int size) {
