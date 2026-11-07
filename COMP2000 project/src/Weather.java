@@ -74,8 +74,10 @@ public class Weather {
             choices = Arrays.asList(Type.FOG, Type.CLOUDY);
         }
 
-        // BUG: Current weather is no longer excluded.
+        // A spell never repeats the weather it follows, and rain and fog never
+        // follow each other.
         List<Type> different = choices.stream()
+                .filter(t -> t != type)
                 .filter(t -> !clashes(type, t))
                 .collect(Collectors.toList());
 
@@ -176,7 +178,8 @@ class Fire {
 
         if (!weather.allowsFire()) {
             putOut();
-            lastSize = Size.NONE;
+            lastSize = Size.NONE; // rain or fog ends the build-up completely
+            lastStartSeconds = 0;
             return;
         }
 
@@ -280,9 +283,8 @@ class Fire {
                 }
             }
         } else if (newSize == Size.LARGE) {
-
-            // BUG: Large fires can spread to many more stations than intended.
-            int target = 4 + random.nextInt(10);
+            // Keep adding a station next to the fire until 4 or 5 are burning.
+            int target = 4 + random.nextInt(2);
 
             while (burning.size() < target) {
                 List<Stops> edge = burning.stream()
@@ -330,8 +332,7 @@ class Fire {
         size = Size.NONE;
         setFlames(false);
         burning.clear();
-
-        // BUG: The spell timer is not reset.
+        spell.reset();
     }
 
     private void setFlames(boolean on) {
@@ -409,6 +410,11 @@ class Spell {
             long nowSeconds) throws DurationLimitException {
         rule.check(minutes);
         endSeconds = nowSeconds + minutes * 60L;
+    }
+
+    // Back to "not running", used when a fire is put out.
+    void reset() {
+        endSeconds = 0;
     }
 
     void extend(long nowSeconds) {
