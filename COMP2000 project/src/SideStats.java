@@ -38,7 +38,36 @@ public class SideStats implements SideView {
         int carried() {
             return delivered + aboard;
         }
+
+        // Adds another row's numbers into this one (used for the ALL row).
+        void add(Row other) {
+            delivered += other.delivered;
+            aboard += other.aboard;
+            serviceSeconds += other.serviceSeconds;
+            lateSeconds += other.lateSeconds;
+            waitPassengerSeconds += other.waitPassengerSeconds;
+        }
+
+        double averageWaitMinutes() {
+            if (carried() == 0) {
+                return 0;
+            }
+            return waitPassengerSeconds / 60.0 / carried();
+        }
+
+        double onTimePercent() {
+            if (serviceSeconds == 0) {
+                return 100;
+            }
+            return 100.0 * (serviceSeconds - lateSeconds) / serviceSeconds;
+        }
     }
+
+    // Column x positions.
+    private final int colTrain;
+    private final int colDelivered;
+    private final int colWait;
+    private final int colOnTime;
 
     private final Map<String, Row> rows = new LinkedHashMap<>();
     private long lastSeconds = 0;
@@ -47,6 +76,10 @@ public class SideStats implements SideView {
         this.leftX = leftX;
         this.top = top;
         this.rightX = rightX;
+        this.colTrain = leftX + 40;
+        this.colDelivered = leftX + 150;
+        this.colWait = leftX + 300;
+        this.colOnTime = leftX + 470;
     }
 
     @Override
@@ -81,20 +114,6 @@ public class SideStats implements SideView {
         }
     }
 
-    private static double onTimePercent(long serviceSeconds, long lateSeconds) {
-        if (serviceSeconds == 0) {
-            return 100;
-        }
-        return 100.0 * (serviceSeconds - lateSeconds) / serviceSeconds;
-    }
-
-    private static double averageWaitMinutes(long waitPassengerSeconds, int carried) {
-        if (carried == 0) {
-            return 0;
-        }
-        return waitPassengerSeconds / 60.0 / carried;
-    }
-
     @Override
     public void draw(Graphics g, int panelHeight, Vehicles[] trains, Time time) {
         int w = rightX - leftX;
@@ -107,11 +126,6 @@ public class SideStats implements SideView {
 
         g.setFont(new Font("SansSerif", Font.BOLD, 20));
         g.drawString("Statistics", leftX + 20, top + 34);
-
-        int colTrain = leftX + 40;
-        int colDelivered = leftX + 150;
-        int colWait = leftX + 300;
-        int colOnTime = leftX + 470;
 
         int headerY = top + 78;
         g.setColor(headerRow);
@@ -135,30 +149,20 @@ public class SideStats implements SideView {
             g.setFont(new Font("SansSerif", Font.BOLD, 13));
             g.drawString(train.getName(), colTrain, rowY);
             g.setFont(new Font("SansSerif", Font.PLAIN, 13));
-            g.drawString(String.valueOf(row.delivered), colDelivered, rowY);
-            g.drawString(String.format("%.1f min", averageWaitMinutes(row.waitPassengerSeconds, row.carried())),
-                    colWait, rowY);
-            g.drawString(String.format("%.0f%%", onTimePercent(row.serviceSeconds, row.lateSeconds)),
-                    colOnTime, rowY);
+            drawNumbers(g, rowY, row);
 
             g.setColor(gridLine);
             g.drawLine(leftX + 12, rowY + 14, rightX - 12, rowY + 14);
             rowY += 46;
         }
 
-        // Total row: the same three numbers over every train.
-        int delivered = rows.values().stream().mapToInt(r -> r.delivered).sum();
-        int carried = rows.values().stream().mapToInt(Row::carried).sum();
-        long waitSeconds = rows.values().stream().mapToLong(r -> r.waitPassengerSeconds).sum();
-        long serviceSeconds = rows.values().stream().mapToLong(r -> r.serviceSeconds).sum();
-        long lateSeconds = rows.values().stream().mapToLong(r -> r.lateSeconds).sum();
+        // Total row: collect() builds one empty Row, then adds every train's Row into it.
+        Row total = rows.values().stream().collect(Row::new, Row::add, Row::add);
 
         g.setColor(Color.black);
         g.setFont(new Font("SansSerif", Font.BOLD, 13));
         g.drawString("ALL", colTrain, rowY);
-        g.drawString(String.valueOf(delivered), colDelivered, rowY);
-        g.drawString(String.format("%.1f min", averageWaitMinutes(waitSeconds, carried)), colWait, rowY);
-        g.drawString(String.format("%.0f%%", onTimePercent(serviceSeconds, lateSeconds)), colOnTime, rowY);
+        drawNumbers(g, rowY, total);
 
         g.setColor(new Color(60, 60, 60));
         g.setFont(new Font("SansSerif", Font.ITALIC, 12));
@@ -166,5 +170,12 @@ public class SideStats implements SideView {
                 leftX + 20, rowY + 44);
         g.drawString("On time = share of service time the train was running.",
                 leftX + 20, rowY + 62);
+    }
+
+    // The three numbers of a row, in their columns (used for each train and for ALL).
+    private void drawNumbers(Graphics g, int y, Row row) {
+        g.drawString(String.valueOf(row.delivered), colDelivered, y);
+        g.drawString(String.format("%.1f min", row.averageWaitMinutes()), colWait, y);
+        g.drawString(String.format("%.0f%%", row.onTimePercent()), colOnTime, y);
     }
 }
