@@ -5,7 +5,7 @@ import java.awt.Graphics;
 // The fixed UI: the top bar (Time|Day box, home and pause buttons) and one of
 // two left views, SideTrain (list of trains) or SideTable (timetable).
 // SidePanel is the context of a State pattern: `view` is the current state and
-// does the drawing and the scrolling. Two chevron tabs on the view's right
+// does the drawing and the scrolling. Three chevron tabs on the view's right
 // edge switch state; their positions never swap, only colour and width change.
 public class SidePanel {
 
@@ -26,6 +26,7 @@ public class SidePanel {
 
     boolean trainTabHover = false;
     boolean tableTabHover = false;
+    boolean statsTabHover = false;
     boolean pauseHover = false;
     boolean homeHover = false;
 
@@ -44,6 +45,7 @@ public class SidePanel {
 
     SideTrain sideTrain = new SideTrain(leftWidth, topHeight);
     SideTable sideTable = new SideTable(0, topHeight, tableWidth);
+    SideStats sideStats = new SideStats(0, topHeight, 640);
     SideView view = sideTrain;
 
     public int getLeftWidth() {
@@ -58,6 +60,7 @@ public class SidePanel {
     public void display(Graphics g, int panelWidth, int panelHeight, Time time, Vehicles[] trains) {
         this.time = time;
         time.applyEvents(trains); // weather and fire effects on the trains
+        sideStats.update(trains, time); // statistics are counted whichever view shows
 
         // Day-night tint over the map. The bars and panels are drawn after
         // it, so only the map and the trains are tinted.
@@ -233,6 +236,10 @@ public class SidePanel {
         return topHeight + 16;
     }
 
+    private int statsTabY() {
+        return tableTabY() + tabHeight + tabGap;
+    }
+
     private int tableTabY() {
         return trainTabY() + tabHeight + tabGap;
     }
@@ -248,6 +255,7 @@ public class SidePanel {
         int x = view.rightEdge();
         drawTab(g, x, trainTabY(), "Train current", view == sideTrain, trainTabHover);
         drawTab(g, x, tableTabY(), "Train table", view == sideTable, tableTabHover);
+        drawTab(g, x, statsTabY(), "Statistics", view == sideStats, statsTabHover);
     }
 
     private void drawTab(Graphics g, int x, int y, String label, boolean active, boolean hover) {
@@ -272,7 +280,8 @@ public class SidePanel {
     }
 
     private boolean isOverAnyTab(int mouseX, int mouseY) {
-        return inTab(mouseX, mouseY, trainTabY()) || inTab(mouseX, mouseY, tableTabY());
+        return inTab(mouseX, mouseY, trainTabY()) || inTab(mouseX, mouseY, tableTabY())
+                || inTab(mouseX, mouseY, statsTabY());
     }
 
     // Each tab always switches to its own view. A click on a speed button is
@@ -292,6 +301,10 @@ public class SidePanel {
             view = sideTable;
             return true;
         }
+        if (inTab(mouseX, mouseY, statsTabY())) {
+            view = sideStats;
+            return true;
+        }
         return false;
     }
 
@@ -302,11 +315,13 @@ public class SidePanel {
 
         boolean trainHover = inTab(x, y, trainTabY());
         boolean tableHover = inTab(x, y, tableTabY());
-        if (trainHover != trainTabHover || tableHover != tableTabHover) {
+        boolean statsHover = inTab(x, y, statsTabY());
+        if (trainHover != trainTabHover || tableHover != tableTabHover || statsHover != statsTabHover) {
             changed = true;
         }
         trainTabHover = trainHover;
         tableTabHover = tableHover;
+        statsTabHover = statsHover;
         return changed;
     }
 
