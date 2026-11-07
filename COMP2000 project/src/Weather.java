@@ -1,6 +1,7 @@
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -156,6 +157,11 @@ class Fire {
     private long lastStartSeconds = 0;
     private int changesWithoutFire = 0;
 
+    // Trains already checked on this visit to the fire, and whether a small
+    // fire has used up its one delay.
+    private final Set<Vehicles> passed = new HashSet<>();
+    private boolean smallFireDelayed = false;
+
     private final Predicate<Vehicles> nearFire = train ->
             burning.contains(train.getCurStop())
                     || burning.contains(train.getNextStop());
@@ -220,15 +226,34 @@ class Fire {
         spread(newSize, where, trains);
         setFlames(true);
 
-        long mostTrains = trains.length;
+        passed.clear();
+        smallFireDelayed = false;
+    }
 
-        if (newSize == Size.SMALL) {
-            mostTrains = 1;
+    // Called every frame. A train that reaches a burning station (or is about
+    // to) gets one roll per visit: a small fire delays one train in total, a
+    // medium fire can delay every train that passes. A large fire does not
+    // delay, it stops the train (see stops).
+    public void affectPassingTrains(Vehicles[] trains) {
+        if (size == Size.NONE || size == Size.LARGE) {
+            return;
         }
 
-        newSize.rule.delay(
-                Arrays.stream(trains).filter(nearFire).limit(mostTrains),
-                random);
+        List<Vehicles> near = Arrays.stream(trains)
+                .filter(nearFire)
+                .collect(Collectors.toList());
+        passed.retainAll(near); // a train that has moved on is rolled again next visit
+
+        near.stream()
+                .filter(passed::add) // only trains that have just arrived
+                .filter(train -> size != Size.SMALL || !smallFireDelayed)
+                .filter(train -> random.nextDouble() < size.rule.delayChance)
+                .forEach(train -> {
+                    train.delay(size.rule.delaySteps);
+                    if (size == Size.SMALL) {
+                        smallFireDelayed = true;
+                    }
+                });
     }
 
     private Size pickSize(long nowSeconds) {
@@ -334,6 +359,7 @@ class Fire {
         size = Size.NONE;
         setFlames(false);
         burning.clear();
+        passed.clear();
         spell.reset();
     }
 

@@ -66,6 +66,7 @@ public class Time {
             fire.maybeStart(weather, trains, simSeconds); // no fire in rain or fog
         }
         fire.endIfOver(simSeconds);
+        fire.affectPassingTrains(trains); // delay a train that reaches a burning station
         for (Vehicles train : trains) {
             train.setStopped(weather.stopsTrains() || fire.stops(train));
         }

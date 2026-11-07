@@ -123,17 +123,19 @@ fire is at one station and only affects trains at or heading into that station.
 
 **Fire** (30% chance of starting each time the weather changes, at a random station):
 
-| Fire | Longest | Spread | Effect on nearby trains | Look |
+| Fire | Longest | Spread | Effect on a train that reaches a burning station | Look |
 |---|---|---|---|---|
-| Small | 1 hour | none, one station | 20% chance to delay one train only | red/yellow stripe |
+| Small | 1 hour | none, one station | 20% chance to delay one train (only one train per fire) | red/yellow stripe |
 | Medium | 1 hour | each neighbouring station has a 25% chance to catch fire, up to 2 more | 60% chance of a longer delay | red/yellow stripe |
 | Large | 30 minutes | keeps spreading until 4 or 5 stations burn | stops until the fire is out | stop sign |
 
-Neighbouring stations are the ones right before and after a station on a line.
+A train is checked once each time it reaches a burning station (or the stop
+just before it), so a train that passes later is also affected. Neighbouring
+stations are the ones right before and after a station on a line.
 For example, if Central is on fire, a medium fire may spread to Rosebury,
 Jubilee or Sherie Grove. The top bar shows the start and the spread, e.g.
 "Fire: Medium fire at Central +2". Each burning station also shows a small
-flame on the map (`Flame`).
+flame (`Flame`) and a red outline instead of the black one.
 
 **The rules that tie them together:**
 

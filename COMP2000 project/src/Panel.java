@@ -247,6 +247,24 @@ public class Panel extends Frame{
         treeImage = Assets.load("2.png");
     }
 
+    // Redraws the ring of every burning station in red (same 5px stroke as the
+    // black ring). Stops know where they are, so no station positions repeat here.
+    private void drawFireOutlines(Graphics g) {
+        Train[] allTrains = {train1, train2, train3, train4};
+        java.util.Arrays.stream(allTrains)
+                .flatMap(train -> train.route.stations.stream())
+                .filter(stop -> stop.onFire)
+                .distinct()
+                .forEach(stop -> {
+                    int size = normalStation;
+                    if (stop.capacity >= 100) {
+                        size = majorStation; // Central, Town Hall, Troll-upon-Bridge
+                    }
+                    g.setColor(Color.red);
+                    g.drawOval(stop.x - size / 2, stop.y - size / 2, size, size);
+                });
+    }
+
     // Pauses the clock, closes the simulation window and returns to the home screen.
     private void goHome() {
         if (time.isRunning()) {
@@ -481,6 +499,9 @@ public class Panel extends Frame{
         g.drawOval(width/2 -normalStation/2 -400, height/2 -normalStation/2 +300, normalStation, normalStation); 
         
         //count up to 16
+
+        // A burning station gets a red outline over its black one.
+        drawFireOutlines(g);
 
         //Vehicles
         train1.displayVehicle(g, 255, 0, 0);
