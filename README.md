@@ -171,25 +171,25 @@ weather spell or a fire longer than its limit throws `DurationLimitException`.
 
 ## Project Status
 
-Status: DONE / PARTLY DONE / TODO
+How far each feature has got: finished, partly finished or not started.
 
-| Feature | Status | Note |
+| Feature | Progress | Note |
 |---|---|---|
-| Top bar | DONE | clock, date, pause, house button |
-| Train list (SideTrain) | PARTLY DONE | no passenger-waiting count yet |
-| Timetable (SideTable) | DONE | one row per train + "busiest right now" |
-| Statistics (SideStats) | DONE | delivered, average wait, on-time % per train and in total |
-| Time | DONE | 06:00-03:00, all trains stop 3am-6am, ~5 sim-min/real-sec, random wobble |
-| Accidents / delays | DONE | `EventQueue<AccidentEvent>`, hazard-stripe indicator |
-| Speed control | DONE | 1x / 2x / 4x buttons, `Speed` |
-| Day-night tint | DONE | map colour follows the time of day |
-| Weather | DONE | sunny / cloudy / rain / fog, time limits, stop sign for fog |
-| Fire | DONE | small / medium / large, never in rain or fog |
-| Random passengers | PARTLY DONE | random start/end; no rush-hour spawn curve |
-| Passenger types by colour | TODO | e.g. student/worker colour key |
-| Exceptions | DONE | `SimulationTimeException`, `DurationLimitException`; image loads fall back instead of crashing |
-| Home / Instruction screens | DONE | |
-| Clickable stations | TODO | show waiting passengers, next train |
+| Top bar | Finished | clock, date, pause, house button |
+| Train list (SideTrain) | Partly finished | no passenger-waiting count yet |
+| Timetable (SideTable) | Finished | one row per train + "busiest right now" |
+| Statistics (SideStats) | Finished | delivered, average wait, on-time % per train and in total |
+| Time | Finished | 06:00-03:00, all trains stop 3am-6am, ~5 sim-min/real-sec, random wobble |
+| Accidents / delays | Finished | `EventQueue<AccidentEvent>`, hazard-stripe indicator |
+| Speed control | Finished | 1x / 2x / 4x buttons, `Speed` |
+| Day-night tint | Finished | map colour follows the time of day |
+| Weather | Finished | sunny / cloudy / rain / fog, time limits, stop sign for fog |
+| Fire | Finished | small / medium / large, never in rain or fog |
+| Random passengers | Partly finished | random start/end; no rush-hour spawn curve |
+| Passenger types by colour | Not started | e.g. student/worker colour key |
+| Exceptions | Finished | `SimulationTimeException`, `DurationLimitException`; image loads fall back instead of crashing |
+| Home / Instruction screens | Finished | |
+| Clickable stations | Not started | show waiting passengers, next train |
 
 ## Ideas for later
 
