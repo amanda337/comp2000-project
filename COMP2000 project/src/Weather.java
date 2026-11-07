@@ -303,23 +303,25 @@ class Fire {
         }
     }
 
+    // The stations right before and after this one on any train's line, e.g.
+    // Central touches Rosebury, Jubilee and Sherie Grove.
     private List<Stops> neighboursOf(Stops stop, Vehicles[] trains) {
-        List<Stops> result = new ArrayList<>();
+        return Arrays.stream(trains)
+                .map(train -> train.route.stations)
+                .flatMap(line -> neighboursOnLine(line, stop))
+                .distinct()
+                .collect(Collectors.toList());
+    }
 
-        for (Vehicles train : trains) {
-            List<Stops> line = train.route.stations;
-            int i = line.indexOf(stop);
-
-            if (i > 0) {
-                result.add(line.get(i - 1));
-            }
-
-            if (i >= 0 && i < line.size() - 1) {
-                result.add(line.get(i + 1));
-            }
+    // The stop before and the stop after on one line (none if it is not on it).
+    private Stream<Stops> neighboursOnLine(List<Stops> line, Stops stop) {
+        int i = line.indexOf(stop);
+        if (i < 0) {
+            return Stream.empty();
         }
-
-        return result.stream().distinct().collect(Collectors.toList());
+        return Stream.of(i - 1, i + 1)
+                .filter(index -> index >= 0 && index < line.size())
+                .map(line::get);
     }
 
     public void endIfOver(long nowSeconds) {

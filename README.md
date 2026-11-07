@@ -21,6 +21,8 @@ on a simulated 06:00 AM to midnight day, resuming automatically each morning.
    next to it set the simulation speed.
 4. Trains run 06:00 AM – midnight; the clock keeps going overnight and
    service resumes automatically at 6am.
+5. The three tabs beside the left panel switch between Train current, Train
+   table and Statistics.
 
 ## Folder Structure
 
@@ -62,6 +64,7 @@ graph TD
 
     SidePanel -->|owns| SideTrain
     SidePanel -->|owns| SideTable
+    SidePanel -->|owns| SideStats
     SideTable -->|reads times from| Time
 
     Time -->|wraps| Timer[javax.swing.Timer]:::ext
@@ -76,7 +79,7 @@ graph TD
 |---|---|
 | `Home`, `Instruction`, `Panel` | the three screens (title, help, simulation); each `extends Frame` |
 | `SidePanel` | top bar (clock, pause, house) and the tabs that switch views |
-| `SideTrain` / `SideTable` | scrolling train-card list / timetable view |
+| `SideTrain` / `SideTable` / `SideStats` | the three left views: train-card list / timetable / statistics (delivered, average wait, on-time %) |
 | `Vehicles` → `Train` | a vehicle on a route; `Train` adds the `t1()`–`t4()` factories |
 | `Routes`, `Stops` | one line's ordered stops; one station |
 | `Passenger` | a commuter walking stop to stop |
@@ -89,6 +92,19 @@ graph TD
 | `Speed` | the 1x / 2x / 4x setting; changes the timer delay in `Time` |
 | `Weather`, `Fire` | the weather and fire rules (see below); both owned by `Time` |
 | `DurationLimitException` | custom checked exception: a weather or fire asked to last too long |
+
+To keep the number of files down, some small classes share a file:
+
+| File | Classes inside |
+|---|---|
+| `Weather.java` | `Weather`, `Fire`, `HazardRule`, `Spell` |
+| `SimulationEvent.java` | `SimulationEvent`, `AccidentEvent`, `EventQueue` |
+| `Time.java` | `Time`, `Speed` |
+| `Stops.java` | `Stops`, `Routes` |
+| `SidePanel.java` | `SidePanel`, `SideView` |
+| `HazardStripe.java` | `HazardStripe`, `StopSign`, `Flame` |
+| `GenericUtil.java` | `GenericUtil`, `Pair` |
+| `SimulationTimeException.java` | `SimulationTimeException`, `DurationLimitException` |
 
 ## Weather and Fire
 
@@ -129,10 +145,13 @@ flame on the map (`Flame`).
    cloudy in the morning, sunny or rain in the afternoon.
 5. A delayed train still moves after its delay ends. A stopped train does not
    move at all until the fog lifts or the fire is out.
+6. A fire is certain after 5 weather changes without one. An hour after a small
+   fire, the next fire is 50% more likely to be medium; two hours after a
+   medium fire, it is 50% more likely to be large.
 
 ```mermaid
 flowchart LR
-    sim["simulation time"] --> weather["weather (sunny, cloudy, storm, foggy)"]
+    sim["simulation time"] --> weather["weather (sunny, cloudy, rain, foggy)"]
     sim --> fire["fire event (none, small, med, large)"]
     weather --> effect["train effect calculation (check weather, fire location, delay possible)"]
     fire --> effect
@@ -140,9 +159,8 @@ flowchart LR
     effect --> delayed["delayed / stop"]
 ```
 
-The arrows show which weather can follow which; there is no arrow between
-Rain and Foggy. Asking for a spell longer than its limit throws
-`DurationLimitException`.
+Weather and fire both change the trains (a delay or a stop). Asking for a
+weather spell or a fire longer than its limit throws `DurationLimitException`.
 
 
 
@@ -155,6 +173,7 @@ Status: DONE / PARTLY DONE / TODO
 | Top bar | DONE | clock, date, pause, house button |
 | Train list (SideTrain) | PARTLY DONE | no passenger-waiting count yet |
 | Timetable (SideTable) | DONE | one row per train + "busiest right now" |
+| Statistics (SideStats) | DONE | delivered, average wait, on-time % per train and in total |
 | Time | DONE | 06:00–midnight, ~5 sim-min/real-sec, random wobble |
 | Accidents / delays | DONE | `EventQueue<AccidentEvent>`, hazard-stripe indicator |
 | Speed control | DONE | 1x / 2x / 4x buttons, `Speed` |
@@ -173,7 +192,6 @@ Status: DONE / PARTLY DONE / TODO
 - More `SimulationEvent` types (rush hour, scheduled arrival) once passenger spawning supports them.
 - `RouteNotFoundException`, `TrainFullException`.
 - Train capacity limits; `Stops.checkCapacity()` wired into boarding time.
-- Statistics view (delivered / average wait / on-time %).
 - Map zoom on scroll; click a line to highlight it; larger-font toggle.
 - Station data in a text/JSON file instead of hardcoded in `Stops`/`Routes`.
 - JUnit tests for `Routes.getNextTowards`, `Vehicles.moveVehicle`, `Time` formatting.
