@@ -14,8 +14,10 @@ public class Time {
     // the clock starts at this moment (1 Sep 2029, 6am), not the real time
     private static final LocalDateTime START = LocalDateTime.of(2029, 9, 1, 6, 0, 0);
 
-    // trains run from 06:00 AM to midnight, the clock keeps going overnight
+    // trains run from 06:00 AM to 03:00 AM, then all stop for 3 hours until 06:00 AM
+    // (the clock keeps going while they are stopped)
     private static final LocalTime SERVICE_START = LocalTime.of(6, 0);
+    private static final LocalTime SERVICE_END = LocalTime.of(3, 0);
 
     // each real second moves the clock 5 simulated minutes
     private static final int STEP_SECONDS = 5 * 60;
@@ -63,8 +65,9 @@ public class Time {
         }
         fire.endIfOver(simSeconds);
         fire.affectPassingTrains(trains);  // delay a train that reaches a fire
+        // every train is stopped when service has ended, as well as in fog or near a large fire
         for (Vehicles train : trains) {
-            train.setStopped(weather.stopsTrains() || fire.stops(train));
+            train.setStopped(!isServiceHours() || weather.stopsTrains() || fire.stops(train));
         }
     }
 
@@ -126,7 +129,7 @@ public class Time {
             boolean nowServiceHours = isServiceHours();
             if (wasServiceHours && !nowServiceHours) {
                 throw new SimulationTimeException(
-                        "Service ended at " + getClockText() + " - trains stop until 06:00 AM.");
+                        "Service ended at " + getClockText() + " - all trains stop until 06:00 AM.");
             }
             if (!wasServiceHours && nowServiceHours) {
                 throw new SimulationTimeException(
@@ -139,10 +142,10 @@ public class Time {
         return ticks % 5 == 0;
     }
 
-    // true from 06:00 AM to midnight
+    // true from 06:00 AM until 03:00 AM the next day
     public boolean isServiceHours() {
         LocalTime timeOfDay = simNow().toLocalTime();
-        return !timeOfDay.isBefore(SERVICE_START);
+        return !timeOfDay.isBefore(SERVICE_START) || timeOfDay.isBefore(SERVICE_END);
     }
 
     // start plus the seconds that have passed
@@ -177,39 +180,39 @@ public class Time {
     public boolean isRunning() {
         return timer.isRunning();
     }
-}
 
-// simulation speed: 1x, 2x or 4x, 2x means the timer fires twice as often
-class Speed {
+    // simulation speed: 1x, 2x or 4x, 2x means the timer fires twice as often
+    public static class Speed {
 
-    // delay between ticks at 1x, in milliseconds
-    public static final int BASE_DELAY = 200;
+        // delay between ticks at 1x, in milliseconds
+        public static final int BASE_DELAY = 200;
 
-    // the speeds the buttons offer
-    public static final int[] OPTIONS = {1, 2, 4};
+        // the speeds the buttons offer
+        public static final int[] OPTIONS = {1, 2, 4};
 
-    private int multiplier = 1;
+        private int multiplier = 1;
 
-    public int getMultiplier() {
-        return multiplier;
-    }
+        public int getMultiplier() {
+            return multiplier;
+        }
 
-    // ignores a value that is not in OPTIONS
-    public void set(int newMultiplier) {
-        for (int option : OPTIONS) {
-            if (option == newMultiplier) {
-                multiplier = newMultiplier;
+        // ignores a value that is not in OPTIONS
+        public void set(int newMultiplier) {
+            for (int option : OPTIONS) {
+                if (option == newMultiplier) {
+                    multiplier = newMultiplier;
+                }
             }
         }
-    }
 
-    // 200, 100 or 50 ms
-    public int timerDelay() {
-        return BASE_DELAY / multiplier;
-    }
+        // 200, 100 or 50 ms
+        public int timerDelay() {
+            return BASE_DELAY / multiplier;
+        }
 
-    // button text, e.g. 2x
-    public static String label(int multiplier) {
-        return multiplier + "x";
+        // button text, e.g. 2x
+        public static String label(int multiplier) {
+            return multiplier + "x";
+        }
     }
 }

@@ -34,7 +34,7 @@ public class Home extends Frame {
         backgroundImage = Assets.load("home.png");
         setVisible(true);
         // read the next screens' pictures in the background so they open fast
-        Assets.preload("1.png", "2.png", "ins.png");
+        Assets.preload("1.png", "ins.png");
 
         addWindowListener(new WindowAdapter() {
             public void windowClosing(WindowEvent we) {
@@ -127,8 +127,9 @@ public class Home extends Frame {
         g.drawString(label, textX, textY);
     }
 
-    // the program can start from here
+    // the program start from here, the window is built on the event thread
+    // (the thread that also handles the clicks, the timer and the painting)
     public static void main(String[] args) {
-        new Home();
+        javax.swing.SwingUtilities.invokeLater(Home::new);
     }
 }

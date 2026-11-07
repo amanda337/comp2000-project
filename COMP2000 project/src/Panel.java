@@ -31,7 +31,7 @@ public class Panel extends Frame{
     ArrayList<Passenger> passengers = new ArrayList<>();
 
     // accidents waiting for their step, earliest first
-    EventQueue<SimulationEvent> accidents = new EventQueue<>();
+    SimulationEvent.EventQueue<SimulationEvent> accidents = new SimulationEvent.EventQueue<>();
 
     Image dbImage;
     Graphics dbGraphics;
@@ -221,7 +221,7 @@ public class Panel extends Frame{
             Train chosen = allTrains[random.nextInt(allTrains.length)];
             long step = 10 + random.nextInt(200);  // spread across the day
             int delaySteps = 3 + random.nextInt(6);
-            accidents.add(new AccidentEvent(step, chosen.getName(), delaySteps));
+            accidents.add(new SimulationEvent.AccidentEvent(step, chosen.getName(), delaySteps));
         }
     }
 
@@ -501,9 +501,9 @@ public class Panel extends Frame{
 
     }
 
-    // always start from the home screen
+    // always start from the home screen, built on the event thread
     public static void main(String[] args) {
-        new Home();
+        javax.swing.SwingUtilities.invokeLater(Home::new);
     }
 }
 

@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 // The "Train table" view: a wide panel that opens over the map with one row per
 // train (line, current stop, next stop, rough ETA), then a footer naming the
 // busiest train and a running/delayed status board. Times come from Time.
-public class SideTable implements SideView {
+public class SideTable implements SidePanel.SideView {
 
     private final int leftX;   // x where the table starts
     private final int top;     // y where the panel starts (below the top bar)
@@ -98,7 +98,7 @@ public class SideTable implements SideView {
 
     private void drawRow(Graphics g, int y, Vehicles train, Time time) {
         // Line-colour swatch next to the train name.
-        g.setColor(SideView.lineColour(train.getName()));
+        g.setColor(SidePanel.SideView.lineColour(train.getName()));
         g.fillRect(colTrain - 16, y - 11, 11, 11);
         g.setColor(Color.black);
         g.drawRect(colTrain - 16, y - 11, 11, 11);
@@ -110,7 +110,7 @@ public class SideTable implements SideView {
         g.drawString(train.route.name, colLine, y);
         g.drawString(train.getCurStop().getName(), colCurrent, y);
         g.drawString(time.clockAt(0), colTime, y);
-        g.drawString(SideView.nextStopName(train), colNext, y);
+        g.drawString(SidePanel.SideView.nextStopName(train), colNext, y);
         g.drawString(time.clockAt(MINUTES_BETWEEN_STOPS), colEta, y);
     }
 

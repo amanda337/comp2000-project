@@ -2,8 +2,8 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
+import java.util.Map;
 
 // the fixed part of the screen: top bar (clock, speed, home, pause) and one of three left views.
 // view is the current state (State pattern) and does the drawing and scrolling,
@@ -142,13 +142,13 @@ public class SidePanel {
 
     // left edge of each speed button, they end just before the home button
     private int speedX(int panelWidth, int i) {
-        int count = Speed.OPTIONS.length;
+        int count = Time.Speed.OPTIONS.length;
         return homeX(panelWidth) - homeGap - (count - i) * speedButtonWidth;
     }
 
     // index of the speed button at this point, -1 if none
     private int speedIndexAt(int mouseX, int mouseY, int panelWidth) {
-        for (int i = 0; i < Speed.OPTIONS.length; i++) {
+        for (int i = 0; i < Time.Speed.OPTIONS.length; i++) {
             if (inRect(mouseX, mouseY, speedX(panelWidth, i), buttonY(), speedButtonWidth, topButtonSize)) {
                 return i;
             }
@@ -159,10 +159,10 @@ public class SidePanel {
     // three boxes side by side, the current speed is blue
     private void drawSpeedButtons(Graphics g, int panelWidth, int current) {
         g.setFont(new Font("SansSerif", Font.BOLD, 14));
-        for (int i = 0; i < Speed.OPTIONS.length; i++) {
+        for (int i = 0; i < Time.Speed.OPTIONS.length; i++) {
             int x = speedX(panelWidth, i);
             int y = buttonY();
-            boolean selected = Speed.OPTIONS[i] == current;
+            boolean selected = Time.Speed.OPTIONS[i] == current;
 
             g.setColor(pick(selected, accentLine, pick(i == speedHover, buttonHoverFill, buttonFill)));
             g.fillRect(x, y, speedButtonWidth, topButtonSize);
@@ -170,7 +170,7 @@ public class SidePanel {
             g.drawRect(x, y, speedButtonWidth, topButtonSize);
 
             g.setColor(pick(selected, Color.white, Color.black));
-            g.drawString(Speed.label(Speed.OPTIONS[i]), x + 10, y + topButtonSize / 2 + 5);
+            g.drawString(Time.Speed.label(Time.Speed.OPTIONS[i]), x + 10, y + topButtonSize / 2 + 5);
         }
     }
 
@@ -314,7 +314,7 @@ public class SidePanel {
     public boolean handleTabClick(int mouseX, int mouseY, int panelWidth) {
         int speedIndex = speedIndexAt(mouseX, mouseY, panelWidth);
         if (speedIndex >= 0 && time != null) {
-            time.setSpeed(Speed.OPTIONS[speedIndex]);
+            time.setSpeed(Time.Speed.OPTIONS[speedIndex]);
             return true;
         }
         Optional<Tab> clicked = tabAt(mouseX, mouseY);
@@ -356,49 +356,49 @@ public class SidePanel {
     private boolean inRect(int px, int py, int x, int y, int w, int h) {
         return px >= x && px <= x + w && py >= y && py <= y + h;
     }
-}
 
-// the left views (State pattern), SidePanel passes draw and mouse calls to the current one
-interface SideView {
+    // the left views (State pattern), SidePanel passes draw and mouse calls to the current one
+    public interface SideView {
 
-    int MINUTES_BETWEEN_STOPS = 3;
+        int MINUTES_BETWEEN_STOPS = 3;
 
-    Map<String, Color> LINE_COLOURS = Map.of(
-            "T1", new Color(255, 0, 0),  // red line
-            "T2", new Color(0, 0, 255),  // blue line
-            "T3", new Color(191, 0, 255),  // purple line
-            "T4", new Color(0, 160, 0));  // green line
+        Map<String, Color> LINE_COLOURS = Map.of(
+                "T1", new Color(255, 0, 0),  // red line
+                "T2", new Color(0, 0, 255),  // blue line
+                "T3", new Color(191, 0, 255),  // purple line
+                "T4", new Color(0, 160, 0));  // green line
 
-    void draw(Graphics g, int panelHeight, Vehicles[] trains, Time time);
+        void draw(Graphics g, int panelHeight, Vehicles[] trains, Time time);
 
-    // right edge of the view, the tabs sit just outside it
-    int rightEdge();
+        // right edge of the view, the tabs sit just outside it
+        int rightEdge();
 
-    // only the train list scrolls, the other views do nothing here
-    default boolean setPointer(int x, int y) {
-        return false;
-    }
+        // only the train list scrolls, the other views do nothing here
+        default boolean setPointer(int x, int y) {
+            return false;
+        }
 
-    default boolean isOverScrollbar(int x, int y) {
-        return false;
-    }
+        default boolean isOverScrollbar(int x, int y) {
+            return false;
+        }
 
-    default void dragScrollTo(int y) {
-    }
+        default void dragScrollTo(int y) {
+        }
 
-    default void scrollBy(int amount) {
-    }
+        default void scrollBy(int amount) {
+        }
 
-    default void setThumbDragging(boolean dragging) {
-    }
+        default void setThumbDragging(boolean dragging) {
+        }
 
-    // the colour a train shares with its line on the map
-    static Color lineColour(String trainName) {
-        return LINE_COLOURS.getOrDefault(trainName, Color.gray);
-    }
+        // the colour a train shares with its line on the map
+        static Color lineColour(String trainName) {
+            return LINE_COLOURS.getOrDefault(trainName, Color.gray);
+        }
 
-    // "-" when there is no next stop
-    static String nextStopName(Vehicles train) {
-        return Optional.ofNullable(train.getNextStop()).map(Stops::getName).orElse("-");
+        // "-" when there is no next stop
+        static String nextStopName(Vehicles train) {
+            return Optional.ofNullable(train.getNextStop()).map(Stops::getName).orElse("-");
+        }
     }
 }

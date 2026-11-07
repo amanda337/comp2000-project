@@ -9,7 +9,7 @@ Team: OOPP The GOOP: Ashton, Luke, Daniel, Minying, Amanda
 A small transit-network simulation: four trains, each on its own coloured
 line, share a station network and carry passengers between stops. Random
 accidents, weather and fires delay or stop trains, and the whole timetable runs
-on a simulated 06:00 AM to midnight day, resuming automatically each morning.
+on a simulated day: trains run from 06:00 AM to 03:00 AM, all stop for 3 hours, then start again at 06:00 AM.
 
 ## Getting Started
 
@@ -19,8 +19,8 @@ on a simulated 06:00 AM to midnight day, resuming automatically each morning.
 3. Space, or the play button (top right), starts/pauses the clock. The house
    button (top right) returns to the home screen. The 1x / 2x / 4x buttons
    next to it set the simulation speed.
-4. Trains run 06:00 AM – midnight; the clock keeps going overnight and
-   service resumes automatically at 6am.
+4. Trains run 06:00 AM - 03:00 AM; all trains stop from 3am to 6am (the clock
+   keeps going) and service resumes automatically at 6am.
 5. The three tabs beside the left panel switch between Train current, Train
    table and Statistics.
 6. To compile, from the `COMP2000 project` folder in PowerShell:
@@ -82,11 +82,11 @@ graph TD
 | `Home`, `Instruction`, `Panel` | the three screens (title, help, simulation); each `extends Frame` |
 | `SidePanel` | top bar (clock, pause, house) and the tabs that switch views |
 | `SideTrain` / `SideTable` / `SideStats` | the three left views: train-card list / timetable / statistics (delivered, average wait, on-time %) |
-| `Vehicles` → `Train` | a vehicle on a route; `Train` adds the `t1()`–`t4()` factories |
+| `Vehicles` -> `Train` | a vehicle on a route; `Train` adds the `t1()`-`t4()` factories |
 | `Routes`, `Stops` | one line's ordered stops; one station |
 | `Passenger` | a commuter walking stop to stop |
-| `Time` | simulated clock, 06:00–midnight service window, throws on the hour boundary |
-| `SimulationEvent` → `AccidentEvent` | a scheduled effect; delays one named train |
+| `Time` | simulated clock, 06:00-03:00 service window (all trains stop 3am-6am), throws when service starts or ends |
+| `SimulationEvent` -> `AccidentEvent` | a scheduled effect; delays one named train |
 | `EventQueue<T extends SimulationEvent>` | priority queue of due events, wraps `PriorityQueue<T>` |
 | `Pair<T, U>`, `GenericUtil` | small generics: a label/value pair, a bounded `max(T, T)` |
 | `SimulationTimeException` | custom checked exception for the service window |
@@ -95,18 +95,19 @@ graph TD
 | `Weather`, `Fire` | the weather and fire rules (see below); both owned by `Time` |
 | `DurationLimitException` | custom checked exception: a weather or fire asked to last too long |
 
-To keep the number of files down, some small classes share a file:
 
-| File | Classes inside |
+To keep the number of files down, some small classes are nested inside a
+bigger one (for example `Stops.Routes`). Each file still compiles on its own.
+
+| File | Nested classes |
 |---|---|
-| `Weather.java` | `Weather`, `Fire`, `HazardRule`, `Spell` |
-| `SimulationEvent.java` | `SimulationEvent`, `AccidentEvent`, `EventQueue` |
-| `Time.java` | `Time`, `Speed` |
-| `Stops.java` | `Stops`, `Routes` |
-| `SidePanel.java` | `SidePanel`, `SideView` |
-| `HazardStripe.java` | `HazardStripe`, `StopSign`, `Flame` |
-| `GenericUtil.java` | `GenericUtil`, `Pair` |
-| `SimulationTimeException.java` | `SimulationTimeException`, `DurationLimitException` |
+| `Weather.java` | `HazardRule`, `Spell`, `DurationLimitException` |
+| `SimulationEvent.java` | `AccidentEvent`, `EventQueue` |
+| `Time.java` | `Speed` |
+| `Stops.java` | `Routes` |
+| `SidePanel.java` | `SideView` |
+| `HazardStripe.java` | `StopSign`, `Flame` |
+| `GenericUtil.java` | `Pair` |
 
 ## Weather and Fire
 
@@ -178,7 +179,7 @@ Status: DONE / PARTLY DONE / TODO
 | Train list (SideTrain) | PARTLY DONE | no passenger-waiting count yet |
 | Timetable (SideTable) | DONE | one row per train + "busiest right now" |
 | Statistics (SideStats) | DONE | delivered, average wait, on-time % per train and in total |
-| Time | DONE | 06:00–midnight, ~5 sim-min/real-sec, random wobble |
+| Time | DONE | 06:00-03:00, all trains stop 3am-6am, ~5 sim-min/real-sec, random wobble |
 | Accidents / delays | DONE | `EventQueue<AccidentEvent>`, hazard-stripe indicator |
 | Speed control | DONE | 1x / 2x / 4x buttons, `Speed` |
 | Day-night tint | DONE | map colour follows the time of day |

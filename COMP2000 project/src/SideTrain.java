@@ -3,7 +3,7 @@ import java.awt.Font;
 import java.awt.Graphics;
 
 // the "Train current" view: a card for each train in a scrolling list
-public class SideTrain implements SideView {
+public class SideTrain implements SidePanel.SideView {
 
     private final int width;  // panel width
     private final int top;  // y where the panel starts, below the top bar
@@ -203,17 +203,17 @@ public class SideTrain implements SideView {
         g.drawRoundRect(cardX, cardY, cardWidth, cardHeight, 10, 10);
 
         // stripe in the line colour
-        g.setColor(SideView.lineColour(train.getName()));
+        g.setColor(SidePanel.SideView.lineColour(train.getName()));
         g.fillRoundRect(cardX, cardY, 8, cardHeight, 10, 10);
         g.fillRect(cardX + 4, cardY, 4, cardHeight);  // square off the right edge
 
         // label and value pairs
-        Pair<String, String> current = new Pair<>("Current", train.getCurStop().getName());
-        Pair<String, String> upcoming = new Pair<>("Next", SideView.nextStopName(train));
+        GenericUtil.Pair<String, String> current = new GenericUtil.Pair<>("Current", train.getCurStop().getName());
+        GenericUtil.Pair<String, String> upcoming = new GenericUtil.Pair<>("Next", SidePanel.SideView.nextStopName(train));
 
         String title = train.getName() + " - " + train.route.name;
         if (train.isStopped()) {
-            StopSign.draw(g, cardX + cardWidth - 26, cardY + 24, 32);  // drawn first, it changes the colour
+            HazardStripe.StopSign.draw(g, cardX + cardWidth - 26, cardY + 24, 32);  // drawn first, it changes the colour
             g.setColor(new Color(200, 30, 30));
             title = title + " (STOPPED)";
         } else if (train.isDelayed()) {

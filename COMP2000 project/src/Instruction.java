@@ -39,8 +39,8 @@ public class Instruction extends Frame {
         "Four trains (T1-T4) each run their own coloured line through a shared",
         "network of stations. Passengers appear, board a train at their start",
         "stop, and get off at their destination. Press space, or the play",
-        "button, to watch the network run through its 06:00 AM - midnight",
-        "service - it pauses overnight and starts again automatically at 6am.",
+        "button, to watch the network run from 06:00 AM until 03:00 AM. All trains",
+        "then stop for 3 hours and start again automatically at 6am.",
         "Weather and fires can delay or stop trains along the way.",
         "",
         "CONTROLS IN THE SIMULATION",
@@ -193,8 +193,8 @@ public class Instruction extends Frame {
         g.drawString(label, textX, textY);
     }
 
-    // the program can start from here
+    // the program can start from here, built on the event thread like Home
     public static void main(String[] args) {
-        new Instruction();
+        javax.swing.SwingUtilities.invokeLater(Instruction::new);
     }
 }

@@ -15,13 +15,13 @@ public class Passenger {
         this.end = startPoint(allRoutes()).get(1);
     }
 
-    public static ArrayList<Routes> allRoutes(){
+    public static ArrayList<Stops.Routes> allRoutes(){
         // all four train lines in one list
-        ArrayList<Routes> totalRoutes = new ArrayList<>();
-        totalRoutes.add(Routes.redLine());
-        totalRoutes.add(Routes.blueLine());
-        totalRoutes.add(Routes.purpleLine());
-        totalRoutes.add(Routes.greenLine());
+        ArrayList<Stops.Routes> totalRoutes = new ArrayList<>();
+        totalRoutes.add(Stops.Routes.redLine());
+        totalRoutes.add(Stops.Routes.blueLine());
+        totalRoutes.add(Stops.Routes.purpleLine());
+        totalRoutes.add(Stops.Routes.greenLine());
         return totalRoutes;
     }
 
@@ -37,13 +37,13 @@ public class Passenger {
     //     }
     //     };
 
-    public static ArrayList<Stops> startPoint(ArrayList<Routes> route){
+    public static ArrayList<Stops> startPoint(ArrayList<Stops.Routes> route){
         // random start (position 0) and end (position 1) stop
         ArrayList<Stops> startEnd = new ArrayList<>();
         Stops startpoint;
         Stops endpoint;
         int randomRoute = (int) (Math.random() * (route.size() - 1)) ;
-        Routes routes;
+        Stops.Routes routes;
         // start and end are on the same line
         routes = route.get(randomRoute);
         int randomStart = (int) (Math.random() * (routes.stations.size() - 1)) + 0;

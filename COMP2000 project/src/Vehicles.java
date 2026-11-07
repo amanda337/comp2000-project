@@ -10,7 +10,7 @@ import java.util.Collections;
 public class Vehicles {
     int capacity; 
     String name;
-    Routes route;
+    Stops.Routes route;
     ArrayList<Passenger> onBoard = new ArrayList<>();
 
     int stationIndex = 0;  // index of the current stop in route.stations
@@ -24,7 +24,7 @@ public class Vehicles {
     }
 
     // capacity is stored but not checked anywhere yet
-    public Vehicles(int capacity, String name, Routes route){
+    public Vehicles(int capacity, String name, Stops.Routes route){
         this.capacity = capacity;
         this.name = name;
         this.route = route;
@@ -122,12 +122,12 @@ public class Vehicles {
         g.setColor(Color.white);
         g.drawString(name, textX, textY);
         if(stopped){
-            StopSign.draw(g, x + width / 2, y - 18, 32); // above the train
+            HazardStripe.StopSign.draw(g, x + width / 2, y - 18, 32); // above the train
         }
         // flame on every burning stop of this line
         for(Stops stop : route.stations){
             if(stop.onFire){
-                Flame.draw(g, stop.x - 24, stop.y - 6, 30);
+                HazardStripe.Flame.draw(g, stop.x - 24, stop.y - 6, 30);
             }
         }
         // orange dot when someone is on board

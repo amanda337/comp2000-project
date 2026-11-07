@@ -1,7 +1,7 @@
 import java.util.List;
 import java.util.Random;
 
-// small generic helpers, and the Pair class below
+// small generic helpers
 public class GenericUtil {
 
     // the bigger of two values, T must have compareTo
@@ -16,24 +16,24 @@ public class GenericUtil {
     public static <T> T randomItem(List<T> items, Random random) {
         return items.get(random.nextInt(items.size()));
     }
-}
 
-// holds two values of any type, for example a label and its value
-class Pair<T, U> {
+    // holds two values of any type, for example a label and its value
+    public static class Pair<T, U> {
 
-    private T first;
-    private U second;
+        private T first;
+        private U second;
 
-    public Pair(T first, U second) {
-        this.first = first;
-        this.second = second;
-    }
+        public Pair(T first, U second) {
+            this.first = first;
+            this.second = second;
+        }
 
-    public T getFirst() {
-        return first;
-    }
+        public T getFirst() {
+            return first;
+        }
 
-    public U getSecond() {
-        return second;
+        public U getSecond() {
+            return second;
+        }
     }
 }

@@ -10,7 +10,7 @@ import java.util.Map;
 // the passengers do not record these, so update() works them out by watching the trains:
 // delivered = was on board last frame and gone now, average wait = minutes a passenger
 // sat in a delayed or stopped train, on time = share of service time the train was running
-public class SideStats implements SideView {
+public class SideStats implements SidePanel.SideView {
 
     private final int leftX;
     private final int top;
@@ -136,7 +136,7 @@ public class SideStats implements SideView {
         for (Vehicles train : trains) {
             Row row = rows.getOrDefault(train.getName(), new Row());
 
-            g.setColor(SideView.lineColour(train.getName()));
+            g.setColor(SidePanel.SideView.lineColour(train.getName()));
             g.fillRect(colTrain - 16, rowY - 11, 11, 11);
             g.setColor(Color.black);
             g.drawRect(colTrain - 16, rowY - 11, 11, 11);
