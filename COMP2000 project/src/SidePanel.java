@@ -1,9 +1,12 @@
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics;
+import java.util.List;
+import java.util.Optional;
 
 // The fixed UI: the top bar (Time|Day box, home and pause buttons) and one of
-// two left views, SideTrain (list of trains) or SideTable (timetable).
+// three left views: SideTrain (list of trains), SideTable (timetable) or
+// SideStats (statistics).
 // SidePanel is the context of a State pattern: `view` is the current state and
 // does the drawing and the scrolling. Three chevron tabs on the view's right
 // edge switch state; their positions never swap, only colour and width change.
@@ -22,11 +25,8 @@ public class SidePanel {
     int tabFullWidth = 135;
     int tabHeight = 40;
     int tabPoint = 14;   // length of the pointed tip
-    int tabGap = 10;     // vertical gap between the two tabs
+    int tabGap = 10;     // vertical gap between tabs
 
-    boolean trainTabHover = false;
-    boolean tableTabHover = false;
-    boolean statsTabHover = false;
     boolean pauseHover = false;
     boolean homeHover = false;
 
@@ -47,6 +47,33 @@ public class SidePanel {
     SideTable sideTable = new SideTable(0, topHeight, tableWidth);
     SideStats sideStats = new SideStats(0, topHeight, 640);
     SideView view = sideTrain;
+
+    // One tab: the view it switches to, its place in the column (0 is the top)
+    // and whether the mouse is over it. A new view needs one new line below.
+    private static class Tab {
+        final int row;
+        final String label;
+        final SideView view;
+        boolean hover = false;
+
+        Tab(int row, String label, SideView view) {
+            this.row = row;
+            this.label = label;
+            this.view = view;
+        }
+
+        // Returns true if the hover state changed.
+        boolean setHover(boolean now) {
+            boolean changed = now != hover;
+            hover = now;
+            return changed;
+        }
+    }
+
+    private final List<Tab> tabs = List.of(
+            new Tab(0, "Train current", sideTrain),
+            new Tab(1, "Train table", sideTable),
+            new Tab(2, "Statistics", sideStats));
 
     public int getLeftWidth() {
         return leftWidth;
@@ -232,16 +259,8 @@ public class SidePanel {
 
     // View-switch tabs
 
-    private int trainTabY() {
-        return topHeight + 16;
-    }
-
-    private int statsTabY() {
-        return tableTabY() + tabHeight + tabGap;
-    }
-
-    private int tableTabY() {
-        return trainTabY() + tabHeight + tabGap;
+    private int tabY(Tab tab) {
+        return topHeight + 16 + tab.row * (tabHeight + tabGap);
     }
 
     private int tabWidth(boolean hover) {
@@ -253,9 +272,7 @@ public class SidePanel {
 
     private void drawTabs(Graphics g) {
         int x = view.rightEdge();
-        drawTab(g, x, trainTabY(), "Train current", view == sideTrain, trainTabHover);
-        drawTab(g, x, tableTabY(), "Train table", view == sideTable, tableTabHover);
-        drawTab(g, x, statsTabY(), "Statistics", view == sideStats, statsTabHover);
+        tabs.forEach(tab -> drawTab(g, x, tabY(tab), tab.label, view == tab.view, tab.hover));
     }
 
     private void drawTab(Graphics g, int x, int y, String label, boolean active, boolean hover) {
@@ -279,9 +296,15 @@ public class SidePanel {
         return inRect(mouseX, mouseY, view.rightEdge(), tabY, tabFullWidth + tabPoint, tabHeight);
     }
 
+    // The tab under the mouse, if any (empty when the mouse is over none).
+    private Optional<Tab> tabAt(int mouseX, int mouseY) {
+        return tabs.stream()
+                .filter(tab -> inTab(mouseX, mouseY, tabY(tab)))
+                .findFirst();
+    }
+
     private boolean isOverAnyTab(int mouseX, int mouseY) {
-        return inTab(mouseX, mouseY, trainTabY()) || inTab(mouseX, mouseY, tableTabY())
-                || inTab(mouseX, mouseY, statsTabY());
+        return tabAt(mouseX, mouseY).isPresent();
     }
 
     // Each tab always switches to its own view. A click on a speed button is
@@ -293,19 +316,9 @@ public class SidePanel {
             time.setSpeed(Speed.OPTIONS[speedIndex]);
             return true;
         }
-        if (inTab(mouseX, mouseY, trainTabY())) {
-            view = sideTrain;
-            return true;
-        }
-        if (inTab(mouseX, mouseY, tableTabY())) {
-            view = sideTable;
-            return true;
-        }
-        if (inTab(mouseX, mouseY, statsTabY())) {
-            view = sideStats;
-            return true;
-        }
-        return false;
+        Optional<Tab> clicked = tabAt(mouseX, mouseY);
+        clicked.ifPresent(tab -> view = tab.view);
+        return clicked.isPresent();
     }
 
     // Pointer and scroll calls go straight to the current view.
@@ -313,15 +326,11 @@ public class SidePanel {
     public boolean setPointer(int x, int y) {
         boolean changed = view.setPointer(x, y);
 
-        boolean trainHover = inTab(x, y, trainTabY());
-        boolean tableHover = inTab(x, y, tableTabY());
-        boolean statsHover = inTab(x, y, statsTabY());
-        if (trainHover != trainTabHover || tableHover != tableTabHover || statsHover != statsTabHover) {
-            changed = true;
+        for (Tab tab : tabs) {
+            if (tab.setHover(inTab(x, y, tabY(tab)))) {
+                changed = true;
+            }
         }
-        trainTabHover = trainHover;
-        tableTabHover = tableHover;
-        statsTabHover = statsHover;
         return changed;
     }
 
