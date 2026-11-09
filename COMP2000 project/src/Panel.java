@@ -27,7 +27,7 @@ public class Panel extends Frame{
     Time time;
     SidePanel sidePanel = new SidePanel();
     
-    Passenger pass1 = Passenger.pass1();
+    //Passenger pass1 = Passenger.pass1();
     ArrayList<Passenger> passengers = new ArrayList<>();
 
     // accidents waiting for their step, earliest first
@@ -76,7 +76,7 @@ public class Panel extends Frame{
         setFocusable(true);
         requestFocusInWindow();
 
-        passengers.add(pass1);
+        //passengers.add(pass1);
         scheduleRandomAccidents();
 
         // every 5th tick (1 real second) the trains move and passengers board
@@ -91,25 +91,33 @@ public class Panel extends Frame{
                     //     Passenger.spawnPassengers();
                     // }
 
-                    if (time.isOnSecond() && time.isServiceHours()) {
-                        long step = time.ticks / 5;
-                        Vehicles[] allTrains = {train1, train2, train3, train4};
-
-                        // run the accidents that are due
-                        while (accidents.hasDueEvent(step)) {
-                            accidents.nextEvent().execute(allTrains);
+                    if (time.isOnSecond() && time.isServiceHours()) 
+                    {
+                        Train[] trains = {train1, train2, train3, train4};
+                        for(Train t : trains)
+                        {
+                            t.moveVehicle();
                         }
 
-                        for (Vehicles train : allTrains) {
-                            train.moveVehicle();
-                        }
-
-                        // each passenger gets on or off at the stop the train is at
-                        for (Vehicles train : allTrains) {
-                            for (Passenger p : passengers) {
-                                p.checkBoarding(train.getCurStop(), train.onBoard);
+                        ArrayList<Stops.Routes> routes = new ArrayList<>();
+                        for(Train t : trains)
+                        {
+                            if(!routes.contains(t.route))
+                            {
+                                routes.add(t.route);
                             }
                         }
+                        Passenger.Spawnbatch(passengers, routes);
+
+                        for(Train t : trains)
+                        {
+                            for(Passenger p : passengers)
+                            {
+                                p.CheckBoarding(t.getCurStop(), t.onBoard, t.route);
+                            }
+                        }
+
+                        passengers.removeIf(Passenger :: hasArrived);
                     }
                 } catch (SimulationTimeException ste) {
                     //System.out.println(ste.getMessage());
