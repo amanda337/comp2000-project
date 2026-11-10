@@ -38,13 +38,24 @@ public class Passenger {
     }
  
     // adds 10-20 new passengers, each on a random one of the given routes
-    public static void Spawnbatch(List<Passenger> into, List<Stops.Routes> routes)
+    public static void Spawnbatch(List<Passenger> into, List<Stops.Routes> routes, Time time)
     {
         if (routes.isEmpty())
         {
             return;
         }
-        int count = 10 + random.nextInt(11);   // 10..20 inclusive
+
+        int count = 10;
+        if ( time.isPeakHour() == true)
+        {
+            count += 10;
+        }
+        else 
+        {
+            count = 10;
+        }
+        count = count + random.nextInt(11);   // 10..20 inclusive
+        System.out.println(count);
  
         into.addAll(IntStream.range(0, count)
                 .mapToObj(i -> new Passenger("pass" + (++counter),

@@ -93,6 +93,7 @@ public class Panel extends Frame{
 
                     if (time.isOnSecond() && time.isServiceHours()) 
                     {
+                        System.out.println(time.simNow());
                         Train[] trains = {train1, train2, train3, train4};
                         for(Train t : trains)
                         {
@@ -107,7 +108,7 @@ public class Panel extends Frame{
                                 routes.add(t.route);
                             }
                         }
-                        Passenger.Spawnbatch(passengers, routes);
+                        Passenger.Spawnbatch(passengers, routes, time);
 
                         for(Train t : trains)
                         {

@@ -149,7 +149,7 @@ public class Time {
     }
 
     // start plus the seconds that have passed
-    private LocalDateTime simNow() {
+    public LocalDateTime simNow() {
         return START.plusSeconds(simSeconds);
     }
 
@@ -215,4 +215,10 @@ public class Time {
             return multiplier + "x";
         }
     }
+    public boolean isPeakHour()
+    {
+        int hour = simNow().getHour();
+        return hour >= 7 && hour < hour || hour >= 15 && hour < 18;
+    }
+
 }
