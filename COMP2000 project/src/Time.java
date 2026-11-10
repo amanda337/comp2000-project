@@ -218,7 +218,7 @@ public class Time {
     public boolean isPeakHour()
     {
         int hour = simNow().getHour();
-        return hour >= 7 && hour < hour || hour >= 15 && hour < 18;
+        return hour >= 7 && hour < 9 || hour >= 15 && hour < 18;
     }
 
 }
