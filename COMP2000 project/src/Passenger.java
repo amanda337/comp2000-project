@@ -1,81 +1,93 @@
 import java.util.ArrayList;
-
+import java.util.List;
+import java.util.Random;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+ 
 public class Passenger {
-    // A commuter with a fixed random start and end stop on one line.
-    // checkBoarding compares a train's current stop against start/end, so
-    // the passenger boards and alights without needing its own position.
-
-    private String name;
-    private Stops start;
-    private Stops end;
-
-    public Passenger(String name) {
+    // a commuter with a random start and end stop on one line
+ 
+    private enum State { Waitting, Riding, Arrived }
+ 
+    private static final Random random = new Random();
+    private static int counter = 0;
+ 
+    private final String name;
+    private final Stops.Routes route;
+    private final Stops start;
+    private final Stops end;
+    private State state = State.Waitting;
+ 
+    public Passenger(String name, Stops.Routes route)
+    {
         this.name = name;
-        this.start = startPoint(allRoutes()).get(0);
-        this.end = startPoint(allRoutes()).get(1);
+        this.route = route;
+ 
+        List<Stops> stations = route.stations;
+ 
+        // two different random indexes in one stream: distinct() guarantees
+        // start != end, and limit() stops it (one index if the line has one stop)
+        List<Integer> picks = random.ints(0, stations.size())
+                .distinct()
+                .limit(Math.min(2, stations.size()))
+                .boxed()
+                .collect(Collectors.toList());
+ 
+        this.start = stations.get(picks.get(0));
+        this.end = stations.get(picks.get(picks.size() - 1));
     }
-
-    public static ArrayList<Routes> allRoutes(){
-        // adds all the trainlines into one array for easy accsess
-        ArrayList<Routes> totalRoutes = new ArrayList<>();
-        totalRoutes.add(Routes.redLine());
-        totalRoutes.add(Routes.blueLine());
-        totalRoutes.add(Routes.purpleLine());
-        totalRoutes.add(Routes.greenLine());
-        return totalRoutes;
-    }
-
-    public static void spawnPassengers(Time time){
-        //Spawns 100 Passangers every 60 tick or 30 in gmae mintues.
-        if(time.ticks % 60 == 0){
-            for(int i =0;i<100;i++){
-                startPoint(allRoutes());
-            }
+ 
+    // adds 10-20 new passengers, each on a random one of the given routes
+    public static void Spawnbatch(List<Passenger> into, List<Stops.Routes> routes, Time time)
+    {
+        if (routes.isEmpty())
+        {
+            return;
         }
-        //To do
-        // Make a function called count passengers which counts total passengers in scene
-        //Name passengers so that it goes Passenger1, Passenger2 ect
-        //Then use an for loop taking the total number of passengers as how many times to run
-        //calls all the move, draw and check function using Passengers[i]
 
+        int count = 10;
+        if ( time.isPeakHour() == true)
+        {
+            count += 10;
+        }
+        else 
+        {
+            count = 10;
+        }
+        count = count + random.nextInt(11);   // 10..20 inclusive
+        System.out.println(count);
+ 
+        into.addAll(IntStream.range(0, count)
+                .mapToObj(i -> new Passenger("pass" + (++counter),
+                        routes.get(random.nextInt(routes.size()))))
+                .collect(Collectors.toList()));
     }
-
-    public static ArrayList<Stops> startPoint(ArrayList<Routes> route){
-        // Returns a start end stop through an arraylist with pos 0 being start
-        // and pos 1 being end. using random math for spawn locations
-        ArrayList<Stops> startEnd = new ArrayList<>();
-        Stops startpoint;
-        Stops endpoint;
-        int randomRoute = (int) (Math.random() * (route.size() - 1)) ;
-        Routes routes;
-        // keeps start and stop on the same route to avoid swaping
-        routes = route.get(randomRoute);
-        int randomStart = (int) (Math.random() * (routes.stations.size() - 1)) + 0;
-        int randomEnd = (int) (Math.random() * (routes.stations.size() -  1)) + 0;
-
-        startpoint = routes.stations.get(randomStart);
-        endpoint = routes.stations.get(randomEnd);
-        startEnd.add(startpoint);
-        startEnd.add(endpoint);
-        return startEnd;
-
-    }
-
-    public String getName() {
+ 
+    public String GetName()
+    {
         return name;
     }
-
-    // Example passenger commuting between Jubilee and Percy Port.
-    public static Passenger pass1() {
-        return new Passenger("pass1");
+ 
+    public boolean hasArrived()
+    {
+        return state == State.Arrived;
     }
-
-    // Boards this passenger when curStop matches start, disembarks at end.
-    public void checkBoarding(Stops curStop, ArrayList<Passenger> onBoard) {
-        if (curStop.equals(start) && !onBoard.contains(this)) {
+ 
+    public void CheckBoarding(Stops curStop, ArrayList<Passenger> onBoard, Stops.Routes trainRoute)
+    {
+        if (curStop == null)
+        {
+            return;
+        }
+        if (state == State.Waitting && trainRoute == route && curStop.equals(start))
+        {
             onBoard.add(this);
-        } else if (curStop.equals(end) && onBoard.contains(this)) {
+            state = State.Riding;
+        }
+        else if (state == State.Riding && onBoard.contains(this) && curStop.equals(end))
+        {
             onBoard.remove(this);
+            state = State.Arrived;
         }
     }
 }

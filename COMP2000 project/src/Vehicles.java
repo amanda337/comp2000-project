@@ -10,37 +10,39 @@ import java.util.Collections;
 public class Vehicles {
     int capacity; 
     String name;
-    Routes route;
+    Stops.Routes route;
     ArrayList<Passenger> onBoard = new ArrayList<>();
 
-    int stationIndex = 0; // position along route.stations
+    int stationIndex = 0;  // index of the current stop in route.stations
     int width = 30;
     int height = 16;
 
-    int delayStepsRemaining = 0; // set by a scheduled AccidentEvent, counted down in moveVehicle()
+    int delayStepsRemaining = 0;  // steps left before the train can move again
 
     public Vehicles(){
         
     }
 
-    public Vehicles(int capacity, String name, Routes route){
+    // capacity is stored but not checked anywhere yet
+    public Vehicles(int capacity, String name, Stops.Routes route){
         this.capacity = capacity;
         this.name = name;
         this.route = route;
     }
 
+    // the stop the train is at now
     public Stops getCurStop(){
         return route.stations.get(stationIndex);
     }
 
-    // What moveVehicle() will step to next, including the bounce at the end of the line.
+    // the stop the train moves to next, it turns back at the end of the line
     public Stops getNextStop(){
         int lastIndex = route.stations.size() - 1;
         if(stationIndex < lastIndex){
             return route.stations.get(stationIndex + 1);
         }
         if(lastIndex > 0){
-            return route.stations.get(lastIndex - 1); // where index 1 will be after the reverse
+            return route.stations.get(lastIndex - 1);  // the line is reversed at the end
         }
         return null;
     }
@@ -53,8 +55,7 @@ public class Vehicles {
         return name;
     }
 
-    // Called by an AccidentEvent: stops this vehicle at its current stop for
-    // the given number of steps before it moves again.
+    // holds the train at its stop for this many steps
     public void delay(int steps){
         delayStepsRemaining = delayStepsRemaining + steps;
     }
@@ -63,9 +64,22 @@ public class Vehicles {
         return delayStepsRemaining > 0;
     }
 
-    // Steps forward one stop; reverses direction once it reaches the end of the line.
-    // Stays put while a delay set by delay(...) is still counting down.
+    // set by fog or a large fire, a stopped train does not move at all
+    boolean stopped = false;
+
+    public void setStopped(boolean stopped){
+        this.stopped = stopped;
+    }
+
+    public boolean isStopped(){
+        return stopped;
+    }
+
+    // moves one stop, turns around at the end of the line, waits while delayed
     public void moveVehicle(){
+        if(stopped){
+            return;  // a stopped train does not count its delay down
+        }
         if(delayStepsRemaining > 0){
             delayStepsRemaining = delayStepsRemaining - 1;
             return;
@@ -79,8 +93,7 @@ public class Vehicles {
         }
     }
 
-    // Coloured rectangle at the current stop, labelled with the vehicle's name,
-    // with a red outline and hazard stripe while delayed.
+    // draws the train as a coloured box with its name, at its current stop
     public void displayVehicle(Graphics g, int red, int green, int blue){
         Stops curStop = getCurStop();
         int x = curStop.x-width/2;
@@ -93,7 +106,7 @@ public class Vehicles {
         Graphics2D g2d=(Graphics2D) g;
         g2d.setStroke(new BasicStroke(2));
 
-        g.setColor(new Color(red, green, blue)); // solid red
+        g.setColor(new Color(red, green, blue));  // train colour
         g.fillRect(x, y, width, height);
         if(isDelayed()){
             g.setColor(Color.red);
@@ -108,7 +121,16 @@ public class Vehicles {
         int textY = y + (height + fm.getAscent()) / 2 - 2;
         g.setColor(Color.white);
         g.drawString(name, textX, textY);
-        // Passenger indicator: a small dot in the corner when someone is aboard.
+        if(stopped){
+            HazardStripe.StopSign.draw(g, x + width / 2, y - 18, 32); // above the train
+        }
+        // flame on every burning stop of this line
+        for(Stops stop : route.stations){
+            if(stop.onFire){
+                HazardStripe.Flame.draw(g, stop.x - 24, stop.y - 6, 30);
+            }
+        }
+        // orange dot when someone is on board
         if(onBoard.size() > 0){
             int passengerSize = 6;
             int passengerX = x + width - passengerSize - 2;

@@ -1,4 +1,5 @@
 import java.util.Objects;
+import java.util.ArrayList;
 
 public class Stops {
     int x;
@@ -6,6 +7,7 @@ public class Stops {
     String name;
     int capacity;
     int totalComuters = 0;
+    boolean onFire = false;  // set by Fire, drawn red on the map
 
     public Stops(int x, int y, String name, int capacity) {
         this.x = x;
@@ -14,7 +16,7 @@ public class Stops {
         this.capacity = capacity;
     }
 
-    // Named stops with pixel positions matching where Panel draws them.
+    // every station with its x and y on the map
     public static final Stops TownHall = new Stops(640, 60, "Town Hall", 100);
     public static final Stops Eagleston = new Stops(640, 160, "Eagleston", 50);
     public static final Stops Rosebury = new Stops(640, 260, "Rosebury", 50);
@@ -47,15 +49,17 @@ public class Stops {
         return name;
     }
 
-    public int checkCapacity() {
-        int boardingTime = 0;
-        if (totalComuters >= capacity / 3) {
-            boardingTime = 5; // a busy stop takes a little longer to board
-        }
-        return boardingTime;
-    }
+    // public int checkCapacity() {
+    //     int boardingTime = 0;
+    //     if (totalComuters >= capacity / 3) {
+    //         boardingTime = 5; // a busy stop takes a little longer to board
+    //     }
+    //     return boardingTime;
+    // }   
+    // IntSupplier checkCapacity = () -> (totalComuters >= capacity / 3) ? 5 : 0;
 
-    // Same name means same station, so curStop.equals(end) works reliably.
+
+    // same name means same station
     @Override
     public boolean equals(Object obj) {
         if (this == obj) return true;
@@ -71,5 +75,70 @@ public class Stops {
     @Override
     public String toString() {
         return name;
+    }
+
+    public static class Routes {
+        String name;
+        ArrayList<Stops> stations;
+
+        public Routes(String name, ArrayList<Stops> stations) {
+            this.name = name;
+            this.stations = stations;
+        }
+
+        // red line, stops in order
+        public static Routes redLine() {
+            ArrayList<Stops> stops = new ArrayList<>();
+            stops.add(Stops.TownHall);
+            stops.add(Stops.Eagleston);
+            stops.add(Stops.Rosebury);
+            stops.add(Stops.Central);
+            stops.add(Stops.Jubilee);
+            stops.add(Stops.Bakerville);
+            stops.add(Stops.PercyPort);
+            stops.add(Stops.Merrybrook);
+            stops.add(Stops.Brookchester);
+            return new Routes("Red Line", stops);
+        }
+        // blue line
+        public static Routes blueLine() {
+            ArrayList<Stops> stops = new ArrayList<>();
+            stops.add(Stops.SunsetPoint);
+            stops.add(Stops.DaisyHill);
+            stops.add(Stops.Reeds);
+            stops.add(Stops.PercyPort);
+            stops.add(Stops.Bakerville);
+            stops.add(Stops.Jubilee);
+            stops.add(Stops.Central);
+            stops.add(Stops.SherieGrove);
+            stops.add(Stops.Prudence);
+            stops.add(Stops.TigerBay);
+            stops.add(Stops.TrollUponBridge);
+            stops.add(Stops.Celeste);
+            stops.add(Stops.Hailstone);
+            stops.add(Stops.WindyJunction);
+            return new Routes("Blue Line", stops);
+        }
+            public static Routes purpleLine() {
+            ArrayList<Stops> stops = new ArrayList<>();
+            stops.add(Stops.TownHall);
+            stops.add(Stops.Eagleston);
+            stops.add(Stops.Rosebury);
+            stops.add(Stops.Central);
+            stops.add(Stops.SherieGrove);
+            stops.add(Stops.Prudence);
+            stops.add(Stops.TigerBay);
+            stops.add(Stops.TrollUponBridge);
+            return new Routes("Purple Line", stops);
+        }
+        // green line
+        public static Routes greenLine() {
+            ArrayList<Stops> stops = new ArrayList<>();
+            stops.add(Stops.Central);
+            stops.add(Stops.SherieGrove);
+            stops.add(Stops.AndiePark);
+            stops.add(Stops.MountPresley);
+            return new Routes("Green Line", stops);
+        }
     }
 }

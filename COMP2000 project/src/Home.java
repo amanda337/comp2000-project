@@ -10,9 +10,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
-// The title screen shown when the app starts: a background picture, a
-// title, and two buttons - one into the simulation and one into the
-// instructions.
+// title screen with a background picture and two buttons, START and INSTRUCTION
 public class Home extends Frame {
 
     int width = 1280;
@@ -28,13 +26,15 @@ public class Home extends Frame {
 
     Image backgroundImage;
 
+    // builds the window and opens the next screen when a button is clicked
     public Home() {
         setTitle("Transit Sim - Home");
         setSize(width, height);
-        // Loaded before the window is shown, so the very first paint already
-        // has the picture ready instead of racing it and drawing blank.
+        // load the picture first so the first paint is not blank
         backgroundImage = Assets.load("home.png");
         setVisible(true);
+        // read the next screens' pictures in the background so they open fast
+        Assets.preload("1.png", "ins.png");
 
         addWindowListener(new WindowAdapter() {
             public void windowClosing(WindowEvent we) {
@@ -61,6 +61,7 @@ public class Home extends Frame {
         });
     }
 
+    // both buttons share one x, bottom right
     private int buttonX() {
         return width - buttonMargin - buttonWidth;
     }
@@ -73,12 +74,14 @@ public class Home extends Frame {
         return height - buttonMargin - buttonHeight;
     }
 
+    // true if the mouse is on the button at this y
     private boolean isOverButton(int mouseX, int mouseY, int buttonY) {
         int x = buttonX();
         return mouseX >= x && mouseX <= x + buttonWidth
                 && mouseY >= buttonY && mouseY <= buttonY + buttonHeight;
     }
 
+    // background, title and the two buttons
     public void paint(Graphics g) {
         if (backgroundImage != null) {
             g.drawImage(backgroundImage, 0, 0, width, height, this);
@@ -94,8 +97,7 @@ public class Home extends Frame {
         drawButton(g, instructionY(), "INSTRUCTION");
     }
 
-    // A dark strip behind the title keeps it readable over the busy picture.
-    // Sized to the text itself, so the strip always fits the title exactly.
+    // dark strip behind the title so it is easy to read, as wide as the text
     private void drawTitle(Graphics g) {
         String title = "Train Simulation";
         g.setFont(new Font("SansSerif", Font.BOLD, 42));
@@ -109,6 +111,7 @@ public class Home extends Frame {
         g.drawString(title, 30, 80);
     }
 
+    // grey box with the label in the middle
     private void drawButton(Graphics g, int y, String label) {
         int x = buttonX();
         g.setColor(buttonFill);
@@ -124,7 +127,9 @@ public class Home extends Frame {
         g.drawString(label, textX, textY);
     }
 
+    // the program start from here, the window is built on the event thread
+    // (the thread that also handles the clicks, the timer and the painting)
     public static void main(String[] args) {
-        new Home();
+        javax.swing.SwingUtilities.invokeLater(Home::new);
     }
 }

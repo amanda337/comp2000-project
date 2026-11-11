@@ -3,10 +3,10 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.geom.Area;
+import java.awt.Font;
+import java.awt.FontMetrics;
 
-// Draws a yellow/red diagonal caution-stripe border around the outside of a
-// box. Used to flag a delayed train, both on its side-panel card and on its
-// map icon.
+// yellow and red diagonal border around a box, marks a delayed train
 public class HazardStripe {
 
     public static void draw(Graphics g, int x, int y, int width, int height, int thickness) {
@@ -36,5 +36,49 @@ public class HazardStripe {
         }
 
         g2d.dispose();
+    }
+
+    // red stop sign, drawn on a train that cannot move
+    public static class StopSign {
+
+        // middle of the sign and its size
+        public static void draw(Graphics g, int centreX, int centreY, int size) {
+            double radius = size / 2.0;
+            int[] xs = new int[8];
+            int[] ys = new int[8];
+            for (int i = 0; i < 8; i++) {
+                // eight corners, turned so the flat sides face up and down
+                double angle = Math.toRadians(22.5 + i * 45);
+                xs[i] = (int) Math.round(centreX + radius * Math.cos(angle));
+                ys[i] = (int) Math.round(centreY + radius * Math.sin(angle));
+            }
+
+            g.setColor(new Color(200, 20, 20));
+            g.fillPolygon(xs, ys, 8);
+            g.setColor(Color.white);
+            g.drawPolygon(xs, ys, 8);
+
+            g.setFont(new Font("SansSerif", Font.BOLD, Math.max(7, size / 3)));
+            FontMetrics fm = g.getFontMetrics();
+            g.drawString("STOP", centreX - fm.stringWidth("STOP") / 2,
+                    centreY + fm.getAscent() / 2 - 1);
+        }
+    }
+
+    // small flame next to a burning station
+    public static class Flame {
+
+        public static void draw(Graphics g, int centreX, int bottomY, int size) {
+            int w = size * 2 / 3;
+            int[] xs = {centreX, centreX + w / 2, centreX + w / 3, centreX, centreX - w / 3, centreX - w / 2};
+            int[] ys = {bottomY - size, bottomY - size / 3, bottomY, bottomY - size / 4, bottomY, bottomY - size / 3};
+            g.setColor(new Color(230, 70, 20));
+            g.fillPolygon(xs, ys, 6);
+
+            int[] cx = {centreX, centreX + w / 5, centreX, centreX - w / 5};
+            int[] cy = {bottomY - size * 2 / 3, bottomY - size / 4, bottomY, bottomY - size / 4};
+            g.setColor(new Color(255, 200, 40));
+            g.fillPolygon(cx, cy, 4);
+        }
     }
 }

@@ -1,13 +1,17 @@
 import java.awt.Image;
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.imageio.ImageIO;
 
-// Loads a background picture from the asserts folder. Different ways of
-// running the app (a terminal in the project folder, a terminal in bin, an
-// IDE's run button) start with different working directories, so this tries
-// each likely one in turn. A missing or unreadable picture just means no
-// background instead of a crash.
+// loads the background pictures, tries each likely folder because the
+// working folder is different when run from a terminal or an IDE.
+// a missing picture gives null (no background) instead of a crash.
+// pictures are cached and read on a background thread while Home shows,
+// so the cache is a ConcurrentHashMap (two threads use it).
 public class Assets {
 
     private static final String[] SEARCH_FOLDERS = {
@@ -18,18 +22,48 @@ public class Assets {
         "COMP2000 project/bin/asserts/"
     };
 
+    private static final Map<String, Image> cache = new ConcurrentHashMap<>();
+
+    // counts real disk reads, AtomicInteger stays correct when two threads add
+    private static final AtomicInteger diskReads = new AtomicInteger();
+
+    // how many files were really read from disk
+    static int diskReads() {
+        return diskReads.get();
+    }
+
+    // computeIfAbsent checks and reads in one step, so a file is never loaded twice
     public static Image load(String fileName) {
-        for (String folder : SEARCH_FOLDERS) {
-            File file = new File(folder + fileName);
-            if (file.exists()) {
-                try {
-                    return ImageIO.read(file);
-                } catch (IOException ex) {
-                    System.out.println("Could not read " + file.getPath() + ": " + ex.getMessage());
-                }
-            }
+        return cache.computeIfAbsent(fileName, Assets::readFromDisk);
+    }
+
+    // loads the files one after another on a background thread so the screen does not wait
+    public static void preload(String... fileNames) {
+        Thread thread = new Thread(
+                () -> Arrays.stream(fileNames).forEach(Assets::load),
+                "asset-preload");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    // null when the file is missing or cannot be read
+    private static Image readFromDisk(String fileName) {
+        File file = Arrays.stream(SEARCH_FOLDERS)
+                .map(folder -> new File(folder + fileName))
+                .filter(File::exists)
+                .findFirst()
+                .orElse(null);
+
+        if (file == null) {
+            System.out.println("Could not find " + fileName + " in any asserts folder.");
+            return null;
         }
-        System.out.println("Could not find " + fileName + " in any asserts folder.");
-        return null;
+        try {
+            diskReads.incrementAndGet();
+            return ImageIO.read(file);
+        } catch (IOException ex) {
+            System.out.println("Could not read " + file.getPath() + ": " + ex.getMessage());
+            return null;
+        }
     }
 }
